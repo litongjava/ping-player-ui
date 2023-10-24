@@ -269,14 +269,17 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void playPause() {
-    PlayState currentState = _playState;
-    if (currentState == PlayState.PREPARING) {
+    if (_playState == PlayState.PREPARING) {
+      log.info("stop");
       stopPlayer();
-    } else if (currentState == PlayState.PLAYING) {
+    } else if (_playState == PlayState.PLAYING) {
+      log.info("pause");
       pausePlayer(true);
-    } else if (currentState == PlayState.PAUSE) {
+    } else if (_playState == PlayState.PAUSE) {
+      log.info("start");
       startPlayer();
     } else {
+      log.info("play");
       play(_currentSong.getValue());
     }
   }
@@ -440,7 +443,8 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void pausePlayer(boolean abandonAudioFocus) {
-    if (_playState != PlayState.PREPARING) {
+    log.info("play state:{}",_playState);
+    if (_playState != PlayState.PLAYING) {
       return;
     }
     mediaPlayer.pause();
