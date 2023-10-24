@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <declare-styleable name="TitleLayout">
+    <attr name="tlJustShowStatusBar" format="boolean" />
+    <attr name="tlTextStyle" format="string" />
+  </declare-styleable>
+</resources>

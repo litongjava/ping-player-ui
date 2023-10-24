@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <ImageView
+    android:id="@+id/ivPlayingBg"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scaleType="centerCrop"
+    android:src="@drawable/bg_playing_default" />
+
+  <LinearLayout
+    android:id="@+id/ll_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/translucent_black_p50"
+    android:orientation="vertical">
+
+    <com.litongjava.ping.player.ui.widget.TitleLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      app:tlJustShowStatusBar="true"
+      app:tlTextStyle="white" />
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="?attr/actionBarSize"
+      android:gravity="center_vertical"
+      android:orientation="horizontal">
+
+      <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="4dp"
+        android:orientation="vertical">
+
+        <TextView
+          android:id="@+id/tv_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:ellipsize="end"
+          android:singleLine="true"
+          android:text="无音乐"
+          android:textColor="@color/white"
+          android:textSize="16dp" />
+
+        <TextView
+          android:id="@+id/tv_artist"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:ellipsize="end"
+          android:singleLine="true"
+          android:textColor="@color/grey"
+          android:textSize="12sp" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1">
+
+      <com.litongjava.ping.player.ui.widget.AlbumCoverView
+        android:id="@+id/album_cover_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp" />
+
+      <LinearLayout
+        android:id="@+id/lrcLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center_vertical"
+          android:orientation="horizontal"
+          android:paddingLeft="16dp"
+          android:paddingRight="16dp">
+
+          <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_volume" />
+
+          <SeekBar
+            android:id="@+id/sb_volume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="2dp"
+            android:minHeight="2dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:progressDrawable="@drawable/bg_playing_volume_progress"
+            android:thumb="@drawable/volum_thumb_shape" />
+        </LinearLayout>
+
+        <me.wcy.lrcview.LrcView
+          android:id="@+id/lrc_view"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="15dp"
+          app:lrcAnimationDuration="1000"
+          app:lrcCurrentTextColor="@color/white"
+          app:lrcDividerHeight="24dp"
+          app:lrcNormalTextColor="@color/translucent_white_p50"
+          app:lrcPadding="40dp"
+          app:lrcTextSize="16dp"
+          app:lrcTimelineColor="@color/translucent_white_p50"
+          app:lrcTimelineTextColor="#CCFFFFFF" />
+      </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="15dp"
+      android:orientation="vertical"
+      android:paddingBottom="10dp">
+
+      <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp">
+
+        <TextView
+          android:id="@+id/tv_current_time"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/play_time_start"
+          android:textColor="@color/white"
+          android:textSize="10sp" />
+
+        <SeekBar
+          android:id="@+id/sb_progress"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_weight="1"
+          android:maxHeight="2dp"
+          android:minHeight="2dp"
+          android:progressDrawable="@drawable/bg_playing_playback_progress"
+          android:thumb="@drawable/play_thumb_shape"/>
+
+
+
+        <TextView
+          android:id="@+id/tv_total_time"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/play_time_start"
+          android:textColor="@color/translucent_white_p50"
+          android:textSize="10sp" />
+      </LinearLayout>
+
+      <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+          android:id="@+id/iv_mode"
+          android:layout_width="60dp"
+          android:layout_height="60dp"
+          android:layout_centerVertical="true"
+          android:src="@drawable/ic_play_mode_level_list" />
+
+        <ImageView
+          android:id="@+id/iv_prev"
+          android:layout_width="80dp"
+          android:layout_height="80dp"
+          android:layout_centerVertical="true"
+          android:layout_toLeftOf="@+id/iv_play"
+          android:src="@drawable/ic_playing_prev" />
+
+        <ImageView
+          android:id="@+id/iv_play"
+          android:layout_width="100dp"
+          android:layout_height="100dp"
+          android:layout_centerVertical="true"
+          android:layout_centerInParent="true"
+          android:src="@drawable/ic_playing_play_pause_selector" />
+
+        <ImageView
+          android:id="@+id/iv_next"
+          android:layout_width="80dp"
+          android:layout_height="80dp"
+          android:layout_centerVertical="true"
+          android:layout_toRightOf="@id/iv_play"
+          android:src="@drawable/ic_playing_next" />
+      </RelativeLayout>
+    </LinearLayout>
+  </LinearLayout>
+</FrameLayout>

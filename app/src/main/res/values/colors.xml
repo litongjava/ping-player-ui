@@ -8,4 +8,11 @@
   <color name="black">#FF000000</color>
   <color name="white">#FFFFFFFF</color>
   <color name="gray">#E0E0E0</color>
+  <color name="grey">#9E9E9E</color>
+  <color name="translucent_white_p50">#7FFFFFFF</color>
+  <color name="translucent_black_p50">#7F000000</color>
+  <color name="translucent_white_p30">#4CFFFFFF</color>
+  <color name="red_500">#F44336</color>
+  <color name="red_500_p30">#4CF44336</color>
+  <color name="translucent_white_p10">#19FFFFFF</color>
 </resources>
