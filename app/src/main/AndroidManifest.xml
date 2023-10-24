@@ -13,17 +13,14 @@
     android:roundIcon="@mipmap/ic_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/Theme.Pingplayerui">
-    <activity
-      android:name="PlayerApp"
-      android:label="@string/title_activity_media_player"
-      android:theme="@style/Theme.Pingplayerui.NoActionBar"></activity>
-    <activity android:name=".activity.MediaPlayerActivity">
+
+    <activity android:name=".MainActivity">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
-
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity android:name=".activity.PlayingActivity" />
   </application>
 
 </manifest>

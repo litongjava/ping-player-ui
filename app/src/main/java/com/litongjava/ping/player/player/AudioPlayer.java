@@ -20,7 +20,7 @@ public interface AudioPlayer {
   Integer getBufferingPercent();
 
   @MainThread
-  void addAndPlay(SongEntity song);
+  void addAndPlay(SongEntity... songs);
 
   @MainThread
   void replaceAll(List<SongEntity> songList, SongEntity song);

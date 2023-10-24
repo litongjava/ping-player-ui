@@ -1,8 +1,10 @@
 package com.litongjava.ping.player.player;
 
+import android.annotation.SuppressLint;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import androidx.annotation.MainThread;
@@ -24,7 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -91,47 +95,41 @@ public class AudioPlayerImpl implements AudioPlayer {
 
   @MainThread
   @Override
-  public void addAndPlay(SongEntity song) {
-    ExecutorService mainExecutor = Executors.newSingleThreadExecutor();
-    try {
-      mainExecutor.submit(() -> {
-        List<SongEntity> newPlaylist = null;
-        if (_playlist == null) {
-          newPlaylist = new ArrayList<>();
-        } else {
-          newPlaylist = new ArrayList<>(_playlist.getValue());
-        }
+  public void addAndPlay(SongEntity... songs) {
+    new AddAndPlayTask().execute(songs);
+  }
 
-        int index = newPlaylist.indexOf(song);
-        if (index >= 0) {
-          newPlaylist.set(index, song);
-        } else {
-          newPlaylist.add(song);
-        }
-
-        ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
-        try {
-          List<SongEntity> finalNewPlaylist = newPlaylist;
-          ioExecutor.submit(() -> {
-            db.playlistDao().clear();
-            db.playlistDao().insertAll(finalNewPlaylist);
-            return null;
-          }).get();
-        } catch (InterruptedException | ExecutionException e) {
-          e.printStackTrace();
-        } finally {
-          ioExecutor.shutdown();
-        }
-
-        _playlist.postValue(newPlaylist);
-        play(song);
-      }).get();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+  /**
+   * 处理__playlist为空的情况
+   *
+   * @return
+   */
+  private List<SongEntity> getNewList() {
+    List<SongEntity> newPlaylist = null;
+    log.info("__playlist:{}", _playlist);
+    if (_playlist == null) {
+      newPlaylist = new ArrayList<>();
+    } else {
+      List<SongEntity> currentList = _playlist.getValue();
+      if (currentList == null) {
+        newPlaylist = new ArrayList<>();
+      } else {
+        newPlaylist = new ArrayList<>(currentList);
+      }
     }
-    mainExecutor.shutdown();
+    return newPlaylist;
+  }
+
+  private void updateDb(List<SongEntity> newPlaylist) {
+    ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
+    try {
+      ioExecutor.submit(() -> {
+        db.playlistDao().clear();
+        db.playlistDao().insertAll(newPlaylist);
+      });
+    } finally {
+      ioExecutor.shutdown();
+    }
   }
 
 
@@ -172,8 +170,6 @@ public class AudioPlayerImpl implements AudioPlayer {
       return;
     }
     SongEntity playSong = song == null ? playlist.get(0) : song;
-    log.info("play:{}", playSong.getFileName());
-
     _currentSong.setValue(playSong);
     _playProgress = 0L;
     _bufferingPercent = 0;
@@ -205,15 +201,30 @@ public class AudioPlayerImpl implements AudioPlayer {
   }
 
   public void realPlay(SongEntity playSong) {
-    mediaPlayer.reset();
+    String path = playSong.getPath();
+    log.info("play:{}", path);
+    // 设置数据源为你的mp3文件的路径
+//    MediaPlayer mediaPlayer = new MediaPlayer();
+//    try {
+//      mediaPlayer.setDataSource(path);
+//      mediaPlayer.prepare(); // 准备播放
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+//    mediaPlayer.start();   // 开始播放
+
+
+    if (mediaPlayer == null) {
+      mediaPlayer = new MediaPlayer();
+    }
     try {
-      String path = playSong.getPath();
+      mediaPlayer.reset();
       mediaPlayer.setDataSource(path);
-      mediaPlayer.prepareAsync();
-    } catch (Exception e) {
+      mediaPlayer.prepare();
+      mediaPlayer.start();
+      _playState = PlayState.PLAYING;
+    } catch (IOException e) {
       e.printStackTrace();
-      log.error("play error:{}", e);
-      onPlayError();
     }
   }
 
@@ -259,7 +270,6 @@ public class AudioPlayerImpl implements AudioPlayer {
   @Override
   public void playPause() {
     PlayState currentState = _playState;
-
     if (currentState == PlayState.PREPARING) {
       stopPlayer();
     } else if (currentState == PlayState.PLAYING) {
@@ -457,5 +467,19 @@ public class AudioPlayerImpl implements AudioPlayer {
     }
   }
 
+  private class AddAndPlayTask extends AsyncTask<SongEntity, Void, List<SongEntity>> {
 
+    @Override
+    protected List<SongEntity> doInBackground(SongEntity... songs) {
+      List<SongEntity> newPlaylist = Arrays.asList(songs);
+      updateDb(newPlaylist); // 假设 updateDb 不会更新UI
+      return newPlaylist;
+    }
+
+    @Override
+    protected void onPostExecute(List<SongEntity> newPlaylist) {
+      _playlist.setValue(newPlaylist); // 在主线程上更新UI
+      play(_playlist.getValue().get(0));
+    }
+  }
 }

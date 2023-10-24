@@ -128,7 +128,7 @@ public class PlayingActivity extends AppCompatActivity {
     AcpListener acpListener = new AcpListener() {
       @Override
       public void onGranted() {
-        ToastUtils.defaultToast(getApplicationContext(), "获取权限成功");
+        //ToastUtils.defaultToast(getApplicationContext(), "获取权限成功");
       }
 
       @Override
@@ -136,7 +136,6 @@ public class PlayingActivity extends AppCompatActivity {
         ToastUtils.defaultToast(getApplicationContext(), permissions.toString() + "权限拒绝");
       }
     };
-
     AcpUtils.requestPermissions(this, permissions, acpListener);
   }
 
