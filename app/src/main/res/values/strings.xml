@@ -6,4 +6,16 @@
   <string name="setting_key_sound_effect">sound_effect</string>
   <string name="setting_key_filter_size">filter_size</string>
   <string name="setting_key_filter_time">filter_time</string>
+  <string name="play_mode_shuffle">随机播放</string>
+  <string name="play_mode_single">单曲循环</string>
+  <string name="play_mode_loop">列表循环</string>
+  <string name="title_activity_media_player">MediaPlayerActivity</string>
+  <!-- Strings used for fragments for navigation -->
+  <string name="first_fragment_label">First Fragment</string>
+  <string name="second_fragment_label">Second Fragment</string>
+  <string name="next">Next</string>
+  <string name="previous">Previous</string>
+
+  <string name="hello_first_fragment">Hello first fragment</string>
+  <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
 </resources>

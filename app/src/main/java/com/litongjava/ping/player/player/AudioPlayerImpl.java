@@ -1,6 +1,7 @@
 package com.litongjava.ping.player.player;
 
 import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
 
@@ -10,11 +11,19 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.blankj.utilcode.util.ToastUtils;
 import com.blankj.utilcode.util.Utils;
+import com.litongjava.jfinal.aop.Aop;
+import com.litongjava.jfinal.aop.AopManager;
 import com.litongjava.ping.player.revicer.NoisyAudioStreamReceiver;
 import com.litongjava.ping.player.storage.db.MusicDatabase;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
+import com.litongjava.ping.player.test.TestSongEntity;
 
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,8 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class AudioPlayerImpl implements AudioPlayer {
-
-  private static final String TAG = "AudioPlayer";
+  private Logger log = LoggerFactory.getLogger(this.getClass());
   private static final long TIME_UPDATE = 300L;
   private MutableLiveData<List<SongEntity>> _playlist = new MutableLiveData<>();
   private MutableLiveData<SongEntity> _currentSong = new MutableLiveData<>();
@@ -43,8 +51,8 @@ public class AudioPlayerImpl implements AudioPlayer {
   private MediaPlayer mediaPlayer;
   private MediaSessionManager mediaSessionManager;
   private AudioFocusManager audioFocusManager;
-  private NoisyAudioStreamReceiver noisyReceiver;
-  private IntentFilter noisyFilter;
+  private NoisyAudioStreamReceiver noisyReceiver = Aop.get(NoisyAudioStreamReceiver.class);
+  private IntentFilter noisyFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
   private ScheduledExecutorService scheduledExecutor;
   private ScheduledFuture<?> updateProgressFuture;
@@ -87,7 +95,13 @@ public class AudioPlayerImpl implements AudioPlayer {
     ExecutorService mainExecutor = Executors.newSingleThreadExecutor();
     try {
       mainExecutor.submit(() -> {
-        List<SongEntity> newPlaylist = new ArrayList<>(_playlist.getValue());
+        List<SongEntity> newPlaylist = null;
+        if (_playlist == null) {
+          newPlaylist = new ArrayList<>();
+        } else {
+          newPlaylist = new ArrayList<>(_playlist.getValue());
+        }
+
         int index = newPlaylist.indexOf(song);
         if (index >= 0) {
           newPlaylist.set(index, song);
@@ -97,9 +111,10 @@ public class AudioPlayerImpl implements AudioPlayer {
 
         ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
         try {
+          List<SongEntity> finalNewPlaylist = newPlaylist;
           ioExecutor.submit(() -> {
             db.playlistDao().clear();
-            db.playlistDao().insertAll(newPlaylist);
+            db.playlistDao().insertAll(finalNewPlaylist);
             return null;
           }).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -125,7 +140,6 @@ public class AudioPlayerImpl implements AudioPlayer {
   public void replaceAll(List<SongEntity> songList, SongEntity song) {
     // Launch a new task on the main thread
     Executors.newSingleThreadExecutor().submit(() -> {
-
       // Execute database operations on an IO thread
       try {
         Executors.newSingleThreadExecutor().submit(() -> {
@@ -149,16 +163,16 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void play(SongEntity song) {
-    List<SongEntity> playlist = _playlist.getValue();
-    if (playlist==null || playlist.isEmpty()) {
-      ToastUtils.showLong("play list is empty");
-      return;
 
+    List<SongEntity> playlist = _playlist.getValue();
+    if (playlist == null || playlist.isEmpty()) {
+      return;
     }
     if (song != null && !playlist.contains(song)) {
       return;
     }
     SongEntity playSong = song == null ? playlist.get(0) : song;
+    log.info("play:{}", playSong.getFileName());
 
     _currentSong.setValue(playSong);
     _playProgress = 0L;
@@ -167,18 +181,12 @@ public class AudioPlayerImpl implements AudioPlayer {
 
     PlayService.showNotification(Utils.getApp(), true, playSong);
 
+    if (mediaSessionManager == null) {
+      initMediaSessionManager();
+
+    }
     mediaSessionManager.updateMetaData(playSong);
     mediaSessionManager.updatePlaybackState();
-    mediaPlayer.reset();
-
-    try {
-      mediaPlayer.setDataSource(playSong.getPath());
-      mediaPlayer.prepareAsync();
-    } catch (Exception e) {
-      Log.e(TAG, "play error", e);
-      onPlayError();
-    }
-
     if (playSong.isLocal()) {
       realPlay(playSong);
     } else {
@@ -186,12 +194,25 @@ public class AudioPlayerImpl implements AudioPlayer {
     }
   }
 
+  private void initMediaSessionManager() {
+    mediaSessionManager = new MediaSessionManager(Utils.getApp(), Aop.get(AudioPlayer.class));
+    AopManager.me().addSingletonObject(mediaSessionManager);
+  }
+
+  private void initAudioFocusManager() {
+    audioFocusManager = new AudioFocusManager(Utils.getApp(), Aop.get(AudioPlayer.class));
+    AopManager.me().addSingletonObject(audioFocusManager);
+  }
+
   public void realPlay(SongEntity playSong) {
+    mediaPlayer.reset();
     try {
-      mediaPlayer.setDataSource(playSong.getPath());
+      String path = playSong.getPath();
+      mediaPlayer.setDataSource(path);
       mediaPlayer.prepareAsync();
     } catch (Exception e) {
-      Log.e(TAG, "play error", e);
+      e.printStackTrace();
+      log.error("play error:{}", e);
       onPlayError();
     }
   }
@@ -254,23 +275,30 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void startPlayer() {
-    if (_playState != PlayState.PREPARING && _playState!= PlayState.PAUSE) {
+    log.info("_playState:{}", _playState);
+    if (_playState != PlayState.PREPARING && _playState != PlayState.PAUSE) {
       return;
     }
 
+    if (audioFocusManager == null) {
+      audioFocusManager = new AudioFocusManager(Utils.getApp(), Aop.get(AudioPlayer.class));
+      AopManager.me().addSingletonObject(audioFocusManager);
+    }
     if (audioFocusManager.requestAudioFocus()) {
       mediaPlayer.start();
-      _playState=PlayState.PLAYING;
+      _playState = PlayState.PLAYING;
 
       // Assuming you have a method to replace the coroutine functionality
       startUpdateProgressJob();
 
       PlayService.showNotification(Utils.getApp(), true, _currentSong.getValue());
+      if (mediaSessionManager == null) {
+        initMediaSessionManager();
+      }
       mediaSessionManager.updatePlaybackState();
       Utils.getApp().registerReceiver(noisyReceiver, noisyFilter);
     }
   }
-
 
 
   private void startUpdateProgressJob() {
@@ -286,12 +314,10 @@ public class AudioPlayerImpl implements AudioPlayer {
     // Schedule the task to run periodically
     updateProgressFuture = scheduledExecutor.scheduleAtFixedRate(() -> {
       if (_playState == PlayState.PLAYING) {
-        _playProgress=mediaPlayer.getCurrentPosition();
+        _playProgress = mediaPlayer.getCurrentPosition();
       }
     }, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
   }
-
-
 
 
   private void onPlayError() {
@@ -370,7 +396,7 @@ public class AudioPlayerImpl implements AudioPlayer {
     if (currentState == PlayState.PLAYING || currentState == PlayState.PAUSE) {
       mediaPlayer.seekTo(msec);
       mediaSessionManager.updatePlaybackState();
-      _playProgress=(long) msec;
+      _playProgress = (long) msec;
     }
   }
 
@@ -417,9 +443,19 @@ public class AudioPlayerImpl implements AudioPlayer {
       PlayService.cancelNotification(Utils.getApp());
     }
     mediaSessionManager.updatePlaybackState();
-    Utils.getApp().unregisterReceiver(noisyReceiver);
+    try {
+      Utils.getApp().unregisterReceiver(noisyReceiver);
+    } catch (Exception e) {
+      log.info("unregisterReceiver noisyReceiver fail:{}", e.getMessage());
+    }
+
     if (abandonAudioFocus) {
+      if (audioFocusManager == null) {
+        initAudioFocusManager();
+      }
       audioFocusManager.abandonAudioFocus();
     }
   }
+
+
 }
