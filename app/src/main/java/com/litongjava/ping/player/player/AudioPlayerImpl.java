@@ -448,7 +448,7 @@ public class AudioPlayerImpl implements AudioPlayer {
       return;
     }
     mediaPlayer.pause();
-    _playState = (PlayState.PAUSE);
+    _playState = PlayState.PAUSE;
 
     SongEntity currentSong = _currentSong.getValue();
     if (currentSong != null) {

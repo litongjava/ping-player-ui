@@ -55,7 +55,6 @@ dependencies {
   implementation 'com.blankj:utilcodex:1.31.1'
   implementation 'com.qw:soulpermission:1.3.1'
   implementation 'jp.wasabeef:blurry:4.0.1'
-
   //litongjava
   implementation 'com.litongjava:android-view-inject:1.0'
   implementation('com.litongjava:litongjava-android-utils:1.0.0') {
@@ -63,4 +62,6 @@ dependencies {
   }
 
   implementation 'com.litongjava:jfinal-aop:1.0.4'
+  implementation 'org.t-io:tio-core:2.0.1.v20171015-RELEASE'
+
 }
