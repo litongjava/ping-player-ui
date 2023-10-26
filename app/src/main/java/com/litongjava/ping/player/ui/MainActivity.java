@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 
@@ -16,6 +18,7 @@ import com.litongjava.android.view.inject.annotation.FindViewByIdLayout;
 import com.litongjava.android.view.inject.annotation.OnClick;
 import com.litongjava.android.view.inject.utils.ViewInjectUtils;
 import com.litongjava.jfinal.aop.Aop;
+import com.litongjava.jfinal.aop.AopManager;
 import com.litongjava.ping.player.player.AudioPlayer;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.test.TestSongEntity;
@@ -64,6 +67,12 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.reset();  // 重置MediaPlayer以便再次使用
       }
     });
+    initAopBean();
+  }
+
+  private void initAopBean() {
+    Handler mainHandler = new Handler(Looper.getMainLooper());
+    AopManager.me().addSingletonObject(mainHandler);
   }
 
   @OnClick(R.id.startPlayerBtn)
@@ -75,7 +84,9 @@ public class MainActivity extends AppCompatActivity {
   @OnClick(R.id.addAndPlayBtn)
   public void addAndPlayBtn_OnClick(View v) {
     SongEntity song = TestSongEntity.getSong(0L);
-    Aop.get(AudioPlayer.class).addAndPlay(song);
+    AudioPlayer audioPlayer = Aop.get(AudioPlayer.class);
+    audioPlayer.addAndPlay(song);
+
   }
 
   @OnClick(R.id.btnSendBroadcastToStatic)

@@ -2,6 +2,7 @@ package com.litongjava.ping.player.ui.server;
 
 import android.app.Application;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Build;
 
 import androidx.lifecycle.LiveData;
@@ -58,12 +59,18 @@ public class MessageDispatcher {
     SongEntity song = audioPlayer.getCurrentSong().getValue();
     PlayState playState = audioPlayer.getPlayState().getValue();
     Integer playProgress = audioPlayer.getPlayProgress().getValue();
+    LiveData<Integer> bufferingPercent = audioPlayer.getBufferingPercent();
     int audioSessionId = audioPlayer.getAudioSessionId();
+
+    MediaPlayer mediaPlayer = Aop.get(MediaPlayer.class);
+    int currentPosition = mediaPlayer.getCurrentPosition();
     JSONObject jsonObject = new JSONObject();
     jsonObject.put("song", song);
     jsonObject.put("playState",playState);
     jsonObject.put("playProgress",playProgress);
+    jsonObject.put("bufferingPercent",bufferingPercent);
     jsonObject.put("audioSessionId",audioSessionId);
+    jsonObject.put("currentPosition",currentPosition);
     return JSON.toJSONString(jsonObject);
   }
 

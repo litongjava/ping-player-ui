@@ -40,26 +40,45 @@ public class AudioPlayerImpl implements AudioPlayer {
   private MutableLiveData<List<SongEntity>> _playlist = new MutableLiveData<>();
   private MutableLiveData<SongEntity> _currentSong = new MutableLiveData<>();
   private MutableLiveData<PlayState> _playState = new MutableLiveData<>(PlayState.IDLE);
-  private MutableLiveData<Integer> _playProgress =  new MutableLiveData<>(0);
-  private MutableLiveData<Integer> _bufferingPercent =  new MutableLiveData<>(0);
+  private MutableLiveData<Integer> _playProgress = new MutableLiveData<>(0);
+  private MutableLiveData<Integer> _bufferingPercent = new MutableLiveData<>(0);
 
 
   private MusicDatabase db;
 
-  private MediaPlayer mediaPlayer;
+  private MediaPlayer mediaPlayer = Aop.get(MediaPlayer.class);
   private MediaSessionManager mediaSessionManager;
   private AudioFocusManager audioFocusManager;
   private NoisyAudioStreamReceiver noisyReceiver = Aop.get(NoisyAudioStreamReceiver.class);
   private IntentFilter noisyFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
-  private ScheduledExecutorService scheduledExecutor;
+  private ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
   private ScheduledFuture<?> updateProgressFuture;
 
 
   public AudioPlayerImpl(MusicDatabase db) {
     this.db = db;
-    mediaPlayer = new MediaPlayer();
+    initAudioFoucesManager();
+    initMediaSessionManager();
+    initAudioFocusManager();
+  }
 
+  private void initAudioFoucesManager() {
+    if (audioFocusManager == null) {
+      audioFocusManager = new AudioFocusManager(Utils.getApp(), this);
+      AopManager.me().addSingletonObject(audioFocusManager);
+    }
+  }
+
+
+  private void initMediaSessionManager() {
+    mediaSessionManager = new MediaSessionManager(Utils.getApp(), this);
+    AopManager.me().addSingletonObject(mediaSessionManager);
+  }
+
+  private void initAudioFocusManager() {
+    audioFocusManager = new AudioFocusManager(Utils.getApp(), this);
+    AopManager.me().addSingletonObject(audioFocusManager);
   }
 
   @Override
@@ -184,15 +203,6 @@ public class AudioPlayerImpl implements AudioPlayer {
     }
   }
 
-  private void initMediaSessionManager() {
-    mediaSessionManager = new MediaSessionManager(Utils.getApp(), Aop.get(AudioPlayer.class));
-    AopManager.me().addSingletonObject(mediaSessionManager);
-  }
-
-  private void initAudioFocusManager() {
-    audioFocusManager = new AudioFocusManager(Utils.getApp(), Aop.get(AudioPlayer.class));
-    AopManager.me().addSingletonObject(audioFocusManager);
-  }
 
   public void realPlay(SongEntity playSong) {
     String path = playSong.getPath();
@@ -215,8 +225,8 @@ public class AudioPlayerImpl implements AudioPlayer {
       mediaPlayer.reset();
       mediaPlayer.setDataSource(path);
       mediaPlayer.prepare();
-      mediaPlayer.start();
-      _playState.setValue(PlayState.PLAYING);
+      //调用startPlayer进行播放
+      startPlayer();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -283,16 +293,15 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void startPlayer() {
-    log.info("_playState:{}", _playState);
+    log.info("start player _playState:{}", _playState);
     if (_playState.getValue() != PlayState.PREPARING && _playState.getValue() != PlayState.PAUSE) {
       return;
     }
 
-    if (audioFocusManager == null) {
-      audioFocusManager = new AudioFocusManager(Utils.getApp(), Aop.get(AudioPlayer.class));
-      AopManager.me().addSingletonObject(audioFocusManager);
-    }
-    if (audioFocusManager.requestAudioFocus()) {
+
+    boolean requestAudioFocus = audioFocusManager.requestAudioFocus();
+    log.info("requestAudioFocus:{}", requestAudioFocus);
+    if (requestAudioFocus) {
       mediaPlayer.start();
       _playState.setValue(PlayState.PLAYING);
 
@@ -310,21 +319,20 @@ public class AudioPlayerImpl implements AudioPlayer {
 
 
   private void startUpdateProgressJob() {
-    if (scheduledExecutor == null) {
-      scheduledExecutor = Executors.newScheduledThreadPool(1);
-    }
-
     // Cancel any existing task
     if (updateProgressFuture != null && !updateProgressFuture.isDone()) {
       updateProgressFuture.cancel(true);
     }
 
     // Schedule the task to run periodically
-    updateProgressFuture = scheduledExecutor.scheduleAtFixedRate(() -> {
+    Runnable runnable = () -> {
       if (_playState.getValue() == PlayState.PLAYING) {
-        _playProgress.setValue(mediaPlayer.getCurrentPosition());
+        int currentPosition = mediaPlayer.getCurrentPosition();
+        log.info("currentPosition:{}", currentPosition);
+        _playProgress.setValue(currentPosition);
       }
-    }, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
+    };
+    updateProgressFuture = scheduledExecutor.scheduleAtFixedRate(runnable, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
   }
 
 
