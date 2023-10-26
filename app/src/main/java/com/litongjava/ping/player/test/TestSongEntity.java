@@ -14,7 +14,7 @@ public class TestSongEntity {
     String album = null;
     Long albumId = 0L;
     String albumCover = null;
-    Long duration = 0L;
+    Long duration = 494000L;
     String path = "/storage/emulated/0/Music/开言英语/A1_APartyInvitation__lesson_1368784253.mp3";
     String name = "name";
     Long fileSize = 0L;

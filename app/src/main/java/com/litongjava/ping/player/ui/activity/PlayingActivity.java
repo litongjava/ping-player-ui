@@ -340,6 +340,8 @@ public class PlayingActivity extends AppCompatActivity {
       }
     });
     audioPlayer.getPlayProgress().observe(this,(progress)->{
+      Logger log = LoggerFactory.getLogger(this.getClass());
+//      log.info("isDraggingProgress:{},progress:{}",isDraggingProgress,progress);
       if (!isDraggingProgress) {
         sbProgress.setProgress(progress);
       }
