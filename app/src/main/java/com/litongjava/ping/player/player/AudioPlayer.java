@@ -13,9 +13,9 @@ public interface AudioPlayer {
 
   LiveData<SongEntity> getCurrentSong();
 
-  PlayState getPlayState();
+  LiveData<PlayState> getPlayState();
 
-  Long getPlayProgress();
+  LiveData<Integer> getPlayProgress();
 
   Integer getBufferingPercent();
 

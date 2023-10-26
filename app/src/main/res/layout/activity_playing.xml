@@ -94,7 +94,8 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:contentDescription="@null"
-            android:src="@drawable/ic_volume" />
+            android:src="@drawable/ic_volume"
+            android:visibility="invisible" />
 
           <SeekBar
             android:id="@+id/sb_volume"
@@ -105,7 +106,8 @@
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
             android:progressDrawable="@drawable/bg_playing_volume_progress"
-            android:thumb="@drawable/volum_thumb_shape" />
+            android:thumb="@drawable/volum_thumb_shape"
+            android:visibility="invisible" />
         </LinearLayout>
 
         <me.wcy.lrcview.LrcView
@@ -155,7 +157,7 @@
           android:maxHeight="2dp"
           android:minHeight="2dp"
           android:progressDrawable="@drawable/bg_playing_playback_progress"
-          android:thumb="@drawable/play_thumb_shape"/>
+          android:thumb="@drawable/play_thumb_shape" />
 
         <TextView
           android:id="@+id/tv_total_time"
@@ -189,8 +191,8 @@
           android:id="@+id/iv_play"
           android:layout_width="100dp"
           android:layout_height="100dp"
-          android:layout_centerVertical="true"
           android:layout_centerInParent="true"
+          android:layout_centerVertical="true"
           android:src="@drawable/ic_playing_play_pause_selector" />
 
         <ImageView

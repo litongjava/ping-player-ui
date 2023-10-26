@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
 
@@ -42,6 +43,10 @@ import com.litongjava.ping.player.utils.ImageLoadCallback;
 import com.litongjava.ping.player.utils.ImageUtils;
 import com.litongjava.ping.player.utils.TimeUtils;
 import com.mylhyl.acp.AcpListener;
+import com.xiaoleilu.hutool.log.LogFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
@@ -185,7 +190,7 @@ public class PlayingActivity extends AppCompatActivity {
    * 点击封面时，会调用switchCoverLrc(false)来切换显示封面或歌词。
    */
   private void initCover() {
-    albumCoverView.initNeedle(audioPlayer.getPlayState().isPlaying());
+    albumCoverView.initNeedle(audioPlayer.getPlayState().getValue().isPlaying());
     albumCoverView.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -208,9 +213,9 @@ public class PlayingActivity extends AppCompatActivity {
     lrcView.setDraggable(true, new LrcView.OnPlayClickListener() {
       @Override
       public boolean onPlayClick(LrcView view, long time) {
-        if (audioPlayer.getPlayState().isPlaying() || audioPlayer.getPlayState().isPausing()) {
+        if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPausing()) {
           audioPlayer.seekTo((int) time);
-          if (audioPlayer.getPlayState().isPausing()) {
+          if (audioPlayer.getPlayState().getValue().isPausing()) {
             audioPlayer.playPause();
           }
           return true;
@@ -277,7 +282,7 @@ public class PlayingActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekBar) {
         if (seekBar == null) return;
         isDraggingProgress = false;
-        if (audioPlayer.getPlayState().isPlaying() || audioPlayer.getPlayState().isPausing()) {
+        if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPausing()) {
           int progress = seekBar.getProgress();
           audioPlayer.seekTo(progress);
           if (lrcView.hasLrc()) {
@@ -325,13 +330,34 @@ public class PlayingActivity extends AppCompatActivity {
   }
 
   private void initData() {
+    audioPlayer.getPlayState().observe(this, (playState) -> {
+      if (playState.isPlaying() || playState.isPreparing()) {
+        ivPlay.setSelected(true);
+        albumCoverView.start();
+      } else {
+        ivPlay.setSelected(false);
+        albumCoverView.pause();
+      }
+    });
+    audioPlayer.getPlayProgress().observe(this,(progress)->{
+      if (!isDraggingProgress) {
+        sbProgress.setProgress(progress);
+      }
+      if (lrcView.hasLrc()) {
+        lrcView.updateTime(progress);
+      }
+    });
+
     audioPlayer.getCurrentSong().observe(this, new Observer<SongEntity>() {
+      Logger log = LoggerFactory.getLogger(this.getClass());
+
       @Override
       public void onChanged(SongEntity song) {
+        log.info("getCurrentSong changed:{}", song);
         if (song != null) {
           tvTitle.setText(song.getTitle());
           tvArtist.setText(song.getArtist());
-          sbProgress.setProgress(audioPlayer.getPlayProgress().intValue());
+          sbProgress.setProgress(audioPlayer.getPlayProgress().getValue());
           sbProgress.setSecondaryProgress(0);
           sbProgress.setMax(song.getDuration().intValue());
           mLastProgress = 0;
@@ -339,9 +365,7 @@ public class PlayingActivity extends AppCompatActivity {
           tvTotalTime.setText(TimeUtils.formatTime("mm:ss", song.getDuration()));
           updateCover(song);
           updateLrc(song);
-
-          if (audioPlayer.getPlayState().isPlaying() ||
-            audioPlayer.getPlayState().isPreparing()) {
+          if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPreparing()) {
             ivPlay.setSelected(true);
             albumCoverView.start();
           } else {
@@ -355,42 +379,7 @@ public class PlayingActivity extends AppCompatActivity {
     });
 
 
-    new AsyncTask<Void, Void, Boolean>() {
-      @Override
-      protected Boolean doInBackground(Void... voids) {
-        PlayState playState = audioPlayer.getPlayState();
-        return playState.isPlaying();
-      }
 
-      @Override
-      protected void onPostExecute(Boolean isPlaying) {
-        if (isPlaying) {
-          ivPlay.setSelected(true);
-          albumCoverView.start();
-        } else {
-          ivPlay.setSelected(false);
-          albumCoverView.pause();
-        }
-      }
-    }.execute();
-
-
-    new AsyncTask<Void, Void, Integer>() {
-      @Override
-      protected Integer doInBackground(Void... voids) {
-        return audioPlayer.getPlayProgress().intValue();
-      }
-
-      @Override
-      protected void onPostExecute(Integer progress) {
-        if (!isDraggingProgress) {
-          sbProgress.setProgress(progress);
-        }
-        if (lrcView.hasLrc()) {
-          lrcView.updateTime(progress);
-        }
-      }
-    }.execute();
 
     new AsyncTask<Void, Void, Integer>() {
       @Override

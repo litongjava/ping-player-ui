@@ -1,6 +1,7 @@
-package com.litongjava.ping.player.tio.hello;
+package com.litongjava.ping.player.ui.server;
 
 import com.blankj.utilcode.util.ThreadUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +17,10 @@ public class TioServerService {
   private Logger log = LoggerFactory.getLogger(this.getClass());
   ExecutorService cachedPool = ThreadUtils.getCachedPool();
 
-  public void startTioServer() {
+  public void startTioServer(String serverIp, int serverPort) {
 
     cachedPool.submit(() -> {
-      try {
-        HelloServerStarter.start();
-      } catch (IOException e) {
-        log.error(e.getMessage());
-        e.printStackTrace();
-      }
+      BytesServerStarter.run(serverIp, serverPort);
     });
   }
 }

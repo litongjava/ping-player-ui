@@ -1,11 +1,9 @@
 package com.litongjava.ping.player.player;
 
-import android.annotation.SuppressLint;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import androidx.annotation.MainThread;
 import androidx.lifecycle.LiveData;
@@ -19,13 +17,10 @@ import com.litongjava.ping.player.revicer.NoisyAudioStreamReceiver;
 import com.litongjava.ping.player.storage.db.MusicDatabase;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
-import com.litongjava.ping.player.test.TestSongEntity;
 
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +29,6 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +39,8 @@ public class AudioPlayerImpl implements AudioPlayer {
   private static final long TIME_UPDATE = 300L;
   private MutableLiveData<List<SongEntity>> _playlist = new MutableLiveData<>();
   private MutableLiveData<SongEntity> _currentSong = new MutableLiveData<>();
-  private PlayState _playState = PlayState.IDLE;
-  private long _playProgress = 0;
+  private MutableLiveData<PlayState> _playState = new MutableLiveData<>(PlayState.IDLE);
+  private MutableLiveData<Integer> _playProgress =  new MutableLiveData<>(0);
   private int _bufferingPercent = 0;
 
 
@@ -79,12 +73,12 @@ public class AudioPlayerImpl implements AudioPlayer {
   }
 
   @Override
-  public PlayState getPlayState() {
+  public LiveData<PlayState> getPlayState() {
     return _playState;
   }
 
   @Override
-  public Long getPlayProgress() {
+  public MutableLiveData<Integer> getPlayProgress() {
     return _playProgress;
   }
 
@@ -171,9 +165,9 @@ public class AudioPlayerImpl implements AudioPlayer {
     }
     SongEntity playSong = song == null ? playlist.get(0) : song;
     _currentSong.setValue(playSong);
-    _playProgress = 0L;
+    _playProgress.setValue(0);
     _bufferingPercent = 0;
-    _playState = PlayState.PREPARING;
+    _playState.setValue(PlayState.PREPARING);
 
     PlayService.showNotification(Utils.getApp(), true, playSong);
 
@@ -222,7 +216,7 @@ public class AudioPlayerImpl implements AudioPlayer {
       mediaPlayer.setDataSource(path);
       mediaPlayer.prepare();
       mediaPlayer.start();
-      _playState = PlayState.PLAYING;
+      _playState.setValue(PlayState.PLAYING);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -255,7 +249,7 @@ public class AudioPlayerImpl implements AudioPlayer {
         int newIndex = Math.max(index - 1, 0);
         _currentSong.postValue(playlist.size() > newIndex ? playlist.get(newIndex) : null);
 
-        PlayState currentState = _playState;
+        PlayState currentState = _playState.getValue();
         if ((currentState == PlayState.PLAYING || currentState == PlayState.PREPARING)
           && !playlist.isEmpty()) {
           next();
@@ -269,13 +263,14 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void playPause() {
-    if (_playState == PlayState.PREPARING) {
+    PlayState currentPlayState = _playState.getValue();
+    if (currentPlayState == PlayState.PREPARING) {
       log.info("stop");
       stopPlayer();
-    } else if (_playState == PlayState.PLAYING) {
+    } else if (currentPlayState == PlayState.PLAYING) {
       log.info("pause");
       pausePlayer(true);
-    } else if (_playState == PlayState.PAUSE) {
+    } else if (currentPlayState == PlayState.PAUSE) {
       log.info("start");
       startPlayer();
     } else {
@@ -289,7 +284,7 @@ public class AudioPlayerImpl implements AudioPlayer {
   @Override
   public void startPlayer() {
     log.info("_playState:{}", _playState);
-    if (_playState != PlayState.PREPARING && _playState != PlayState.PAUSE) {
+    if (_playState.getValue() != PlayState.PREPARING && _playState.getValue() != PlayState.PAUSE) {
       return;
     }
 
@@ -299,7 +294,7 @@ public class AudioPlayerImpl implements AudioPlayer {
     }
     if (audioFocusManager.requestAudioFocus()) {
       mediaPlayer.start();
-      _playState = PlayState.PLAYING;
+      _playState.setValue(PlayState.PLAYING);
 
       // Assuming you have a method to replace the coroutine functionality
       startUpdateProgressJob();
@@ -326,8 +321,8 @@ public class AudioPlayerImpl implements AudioPlayer {
 
     // Schedule the task to run periodically
     updateProgressFuture = scheduledExecutor.scheduleAtFixedRate(() -> {
-      if (_playState == PlayState.PLAYING) {
-        _playProgress = mediaPlayer.getCurrentPosition();
+      if (_playState.getValue() == PlayState.PLAYING) {
+        _playProgress.setValue(mediaPlayer.getCurrentPosition());
       }
     }, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
   }
@@ -341,12 +336,12 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void stopPlayer() {
-    if (_playState == PlayState.IDLE) {
+    if (_playState.getValue() == PlayState.IDLE) {
       return;
     }
     pausePlayer(true);
     mediaPlayer.reset();
-    _playState = PlayState.IDLE;
+    _playState.setValue(PlayState.IDLE);
   }
 
   @MainThread
@@ -405,11 +400,10 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void seekTo(int msec) {
-    PlayState currentState = _playState;
-    if (currentState == PlayState.PLAYING || currentState == PlayState.PAUSE) {
+    if (_playState.getValue() == PlayState.PLAYING || _playState.getValue() == PlayState.PAUSE) {
       mediaPlayer.seekTo(msec);
       mediaSessionManager.updatePlaybackState();
-      _playProgress = (long) msec;
+      _playProgress.setValue(msec);
     }
   }
 
@@ -424,8 +418,7 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public long getAudioPosition() {
-    PlayState currentState = _playState;
-    if (currentState == PlayState.PLAYING || currentState == PlayState.PAUSE) {
+    if (_playState.getValue() == PlayState.PLAYING || _playState.getValue() == PlayState.PAUSE) {
       return (long) mediaPlayer.getCurrentPosition();
     } else {
       return 0;
@@ -443,12 +436,12 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void pausePlayer(boolean abandonAudioFocus) {
-    log.info("play state:{}",_playState);
-    if (_playState != PlayState.PLAYING) {
+    log.info("play state:{}", _playState);
+    if (_playState.getValue() != PlayState.PLAYING) {
       return;
     }
     mediaPlayer.pause();
-    _playState = PlayState.PAUSE;
+    _playState.setValue(PlayState.PAUSE);
 
     SongEntity currentSong = _currentSong.getValue();
     if (currentSong != null) {

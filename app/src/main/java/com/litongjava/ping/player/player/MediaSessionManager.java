@@ -38,7 +38,7 @@ public class MediaSessionManager {
 
   public void updatePlaybackState() {
     int state;
-    if (audioPlayer.getPlayState().isPlaying() || audioPlayer.getPlayState().isPreparing()) {
+    if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPreparing()) {
       state = PlaybackStateCompat.STATE_PLAYING;
     } else {
       state = PlaybackStateCompat.STATE_PAUSED;

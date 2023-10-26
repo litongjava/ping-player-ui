@@ -9,6 +9,7 @@ import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.blankj.utilcode.util.NetworkUtils;
 import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
 import com.litongjava.android.view.inject.annotation.FindViewByIdLayout;
@@ -18,8 +19,8 @@ import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.ping.player.player.AudioPlayer;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.test.TestSongEntity;
-import com.litongjava.ping.player.tio.hello.TioServerService;
 import com.litongjava.ping.player.ui.activity.PlayingActivity;
+import com.litongjava.ping.player.ui.server.TioServerService;
 import com.mylhyl.acp.AcpListener;
 
 import org.slf4j.Logger;
@@ -91,14 +92,18 @@ public class MainActivity extends AppCompatActivity {
     String[] permissions = {
       //写入外部设备权限
       Manifest.permission.ACCESS_NETWORK_STATE,
+      Manifest.permission.ACCESS_WIFI_STATE,
       Manifest.permission.INTERNET,
     };
     //创建acpListener
     AcpListener acpListener = new AcpListener() {
       @Override
       public void onGranted() {
-        log.info("开始启动服务器:");
-        Aop.get(TioServerService.class).startTioServer();
+
+        String ipAddressByWifi = NetworkUtils.getIpAddressByWifi();
+        int serverPort = 5678;
+        log.info("开始启动服务器:{}:{}", ipAddressByWifi, serverPort);
+        Aop.get(TioServerService.class).startTioServer(null, serverPort);
       }
 
       @Override
