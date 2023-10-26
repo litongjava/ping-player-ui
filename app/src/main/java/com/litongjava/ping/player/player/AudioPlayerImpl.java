@@ -4,6 +4,7 @@ import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
+import android.os.Handler;
 
 import androidx.annotation.MainThread;
 import androidx.lifecycle.LiveData;
@@ -58,18 +59,9 @@ public class AudioPlayerImpl implements AudioPlayer {
 
   public AudioPlayerImpl(MusicDatabase db) {
     this.db = db;
-    initAudioFoucesManager();
     initMediaSessionManager();
     initAudioFocusManager();
   }
-
-  private void initAudioFoucesManager() {
-    if (audioFocusManager == null) {
-      audioFocusManager = new AudioFocusManager(Utils.getApp(), this);
-      AopManager.me().addSingletonObject(audioFocusManager);
-    }
-  }
-
 
   private void initMediaSessionManager() {
     mediaSessionManager = new MediaSessionManager(Utils.getApp(), this);
@@ -319,20 +311,31 @@ public class AudioPlayerImpl implements AudioPlayer {
 
 
   private void startUpdateProgressJob() {
+    log.info("startUpdateProgressJob:{}", updateProgressFuture);
     // Cancel any existing task
     if (updateProgressFuture != null && !updateProgressFuture.isDone()) {
       updateProgressFuture.cancel(true);
     }
 
-    // Schedule the task to run periodically
-    Runnable runnable = () -> {
-      if (_playState.getValue() == PlayState.PLAYING) {
-        int currentPosition = mediaPlayer.getCurrentPosition();
-        log.info("currentPosition:{}", currentPosition);
-        _playProgress.setValue(currentPosition);
+//    updateProgressFuture = scheduledExecutor.scheduleWithFixedDelay(() -> {
+//      int currentPosition = mediaPlayer.getCurrentPosition();
+//      log.info("currentPosition:{}", currentPosition);
+//      _playProgress.setValue(currentPosition);
+//    }, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
+    final int delay = 1000;
+    Runnable updateProgressTask = new Runnable() {
+      @Override
+      public void run() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+          int currentPosition = mediaPlayer.getCurrentPosition();
+          //log.info("currentPosition:{}", currentPosition);
+          _playProgress.setValue(currentPosition);
+        }
+        Aop.get(Handler.class).postDelayed(this, TIME_UPDATE);
       }
     };
-    updateProgressFuture = scheduledExecutor.scheduleAtFixedRate(runnable, 0, TIME_UPDATE, TimeUnit.MILLISECONDS);
+    Aop.get(Handler.class).postDelayed(updateProgressTask, TIME_UPDATE);
+
   }
 
 
