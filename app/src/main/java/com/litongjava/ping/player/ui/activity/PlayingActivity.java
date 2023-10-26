@@ -347,6 +347,9 @@ public class PlayingActivity extends AppCompatActivity {
         lrcView.updateTime(progress);
       }
     });
+    audioPlayer.getBufferingPercent().observe(this,(percent)->{
+      sbProgress.setSecondaryProgress(sbProgress.getMax() * percent / 100);
+    });
 
     audioPlayer.getCurrentSong().observe(this, new Observer<SongEntity>() {
       Logger log = LoggerFactory.getLogger(this.getClass());
@@ -377,22 +380,6 @@ public class PlayingActivity extends AppCompatActivity {
         }
       }
     });
-
-
-
-
-    new AsyncTask<Void, Void, Integer>() {
-      @Override
-      protected Integer doInBackground(Void... voids) {
-        return audioPlayer.getBufferingPercent();
-      }
-
-      @Override
-      protected void onPostExecute(Integer percent) {
-        sbProgress.setSecondaryProgress(sbProgress.getMax() * percent / 100);
-      }
-    }.execute();
-
   }
 
   private void updateCover(SongEntity song) {

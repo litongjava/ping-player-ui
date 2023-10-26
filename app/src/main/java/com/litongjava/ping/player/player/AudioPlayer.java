@@ -17,7 +17,7 @@ public interface AudioPlayer {
 
   LiveData<Integer> getPlayProgress();
 
-  Integer getBufferingPercent();
+  LiveData<Integer> getBufferingPercent();
 
   @MainThread
   void addAndPlay(SongEntity... songs);

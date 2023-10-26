@@ -35,13 +35,13 @@ import java.util.concurrent.TimeUnit;
 
 
 public class AudioPlayerImpl implements AudioPlayer {
-  private Logger log = LoggerFactory.getLogger(this.getClass());
+  private final Logger log = LoggerFactory.getLogger(this.getClass());
   private static final long TIME_UPDATE = 300L;
   private MutableLiveData<List<SongEntity>> _playlist = new MutableLiveData<>();
   private MutableLiveData<SongEntity> _currentSong = new MutableLiveData<>();
   private MutableLiveData<PlayState> _playState = new MutableLiveData<>(PlayState.IDLE);
   private MutableLiveData<Integer> _playProgress =  new MutableLiveData<>(0);
-  private int _bufferingPercent = 0;
+  private MutableLiveData<Integer> _bufferingPercent =  new MutableLiveData<>(0);
 
 
   private MusicDatabase db;
@@ -83,7 +83,7 @@ public class AudioPlayerImpl implements AudioPlayer {
   }
 
   @Override
-  public Integer getBufferingPercent() {
+  public LiveData<Integer> getBufferingPercent() {
     return _bufferingPercent;
   }
 
@@ -166,7 +166,7 @@ public class AudioPlayerImpl implements AudioPlayer {
     SongEntity playSong = song == null ? playlist.get(0) : song;
     _currentSong.setValue(playSong);
     _playProgress.setValue(0);
-    _bufferingPercent = 0;
+    _bufferingPercent.setValue(0);
     _playState.setValue(PlayState.PREPARING);
 
     PlayService.showNotification(Utils.getApp(), true, playSong);
