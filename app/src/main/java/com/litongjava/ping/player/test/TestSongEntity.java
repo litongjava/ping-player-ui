@@ -1,7 +1,10 @@
 package com.litongjava.ping.player.test;
 
+import com.litongjava.jfinal.aop.Aop;
+import com.litongjava.ping.player.services.MetadataExtractorService;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +27,24 @@ public class TestSongEntity {
 
   public static List<SongEntity> getPlayList() {
     ArrayList<SongEntity> list = new ArrayList<>();
-    list.add(getSong(0L));
+    String path = "/storage/emulated/0/Music/开言英语";
+    File mp3Folder = new File(path);
+    File[] files = mp3Folder.listFiles();
+    for (int i = 0; i < files.length; i++) {
+      File file = files[i];
+      if (file.getName().endsWith("mp3")) {
+        SongEntity song = Aop.get(MetadataExtractorService.class).getSong(file);
+        Long id = Long.valueOf(i);
+        song.setSongId(id);
+        song.setUniqueId(id + "");
+        song.setAlbumId(id);
+        song.setArtistId(id);
+        list.add(song);
+      }
+
+    }
+
+    //list.add(getSong(0L));
     return list;
   }
 }

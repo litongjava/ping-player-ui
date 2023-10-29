@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
   }
 
-  @OnClick(R.id.btnSendBroadcastToStatic)
+  //@OnClick(R.id.btnSendBroadcastToStatic)
   public void btnSendBroadcast_OnClick(View view) {
 
     log.info("发送广播");
@@ -124,6 +124,14 @@ public class MainActivity extends AppCompatActivity {
     };
 
     AcpUtils.requestPermissions(this, permissions, acpListener);
+  }
+
+  @OnClick(R.id.playListBtn)
+  public void playListBtn_OnClick(View view){
+    List<SongEntity> playList = TestSongEntity.getPlayList();
+    AudioPlayer audioPlayer = Aop.get(AudioPlayer.class);
+    SongEntity[] songEntities = playList.toArray(new SongEntity[0]);
+    audioPlayer.addAndPlay(songEntities);
   }
 
   @Override

@@ -38,10 +38,10 @@
       android:text="Start Player" />
 
     <Button
-      android:id="@+id/btnSendBroadcastToStatic"
+      android:id="@+id/btnStartServer"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="SendBroadcast" />
+      android:text="StartServer" />
   </LinearLayout>
 
   <LinearLayout
@@ -49,10 +49,11 @@
     android:layout_height="wrap_content">
 
     <Button
-      android:id="@+id/btnStartServer"
+      android:id="@+id/playListBtn"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="StartServer" />
+      android:text="Play List" />
+
   </LinearLayout>
 
 </LinearLayout>

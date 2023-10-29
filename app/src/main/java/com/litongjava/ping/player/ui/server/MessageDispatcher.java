@@ -16,10 +16,13 @@ import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.ping.player.player.AudioPlayer;
 import com.litongjava.ping.player.player.PlayState;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
+import com.litongjava.ping.player.test.MetadataExtractorTest;
 import com.litongjava.ping.player.test.TestSongEntity;
 import com.litongjava.ping.player.ui.activity.PlayingActivity;
 
 import org.tio.core.ChannelContext;
+
+import java.util.List;
 
 public class MessageDispatcher {
   public String processMessage(String msg, ChannelContext channelContext) {
@@ -41,8 +44,15 @@ public class MessageDispatcher {
       return playPause(msgArray);
     }else if("update-ui".equals(msgArray[0])){
       return updateUI(msgArray);
+    }else if("get-metadata".equals(msgArray[0])){
+      return getMetaData(msgArray);
     }
     return "index";
+  }
+
+  private String getMetaData(String[] msgArray) {
+    Aop.get(MetadataExtractorTest.class).getMp3Meta();
+    return "success";
   }
 
   private String updateUI(String[] msgArray) {
@@ -61,6 +71,7 @@ public class MessageDispatcher {
     Integer playProgress = audioPlayer.getPlayProgress().getValue();
     LiveData<Integer> bufferingPercent = audioPlayer.getBufferingPercent();
     int audioSessionId = audioPlayer.getAudioSessionId();
+    List<SongEntity> playList = audioPlayer.getPlaylist().getValue();
 
     MediaPlayer mediaPlayer = Aop.get(MediaPlayer.class);
     int currentPosition = mediaPlayer.getCurrentPosition();
@@ -71,6 +82,7 @@ public class MessageDispatcher {
     jsonObject.put("bufferingPercent",bufferingPercent);
     jsonObject.put("audioSessionId",audioSessionId);
     jsonObject.put("currentPosition",currentPosition);
+    jsonObject.put("playList",playList);
     return JSON.toJSONString(jsonObject);
   }
 
