@@ -18,6 +18,7 @@ import com.litongjava.ping.player.player.PlayState;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.test.MetadataExtractorTest;
 import com.litongjava.ping.player.test.TestSongEntity;
+import com.litongjava.ping.player.ui.activity.CurrentPlayListActivity;
 import com.litongjava.ping.player.ui.activity.PlayingActivity;
 
 import org.tio.core.ChannelContext;
@@ -42,13 +43,32 @@ public class MessageDispatcher {
       return palyInfo(msgArray);
     } else if ("play-pause".equals(msgArray[0])) {
       return playPause(msgArray);
-    }else if("update-ui".equals(msgArray[0])){
+    } else if ("update-ui".equals(msgArray[0])) {
       return updateUI(msgArray);
-    }else if("get-metadata".equals(msgArray[0])){
+    } else if ("get-metadata".equals(msgArray[0])) {
       return getMetaData(msgArray);
+    } else if ("start-activity".equals(msgArray[0])) {
+      return startActivity(msgArray);
     }
-    return "index";
+    return "command not found";
   }
+
+  private String startActivity(String[] msgArray) {
+    Application app = Utils.getApp();
+    Intent intent = null;
+    if (msgArray[1].equals("CurrentPlayListActivity")) {
+      intent = new Intent(app, CurrentPlayListActivity.class);
+    }
+
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    try {
+      app.startActivity(intent);
+    } catch (Exception e) {
+      return e.getLocalizedMessage();
+    }
+    return "success";
+  }
+
 
   private String getMetaData(String[] msgArray) {
     Aop.get(MetadataExtractorTest.class).getMp3Meta();
@@ -77,12 +97,12 @@ public class MessageDispatcher {
     int currentPosition = mediaPlayer.getCurrentPosition();
     JSONObject jsonObject = new JSONObject();
     jsonObject.put("song", song);
-    jsonObject.put("playState",playState);
-    jsonObject.put("playProgress",playProgress);
-    jsonObject.put("bufferingPercent",bufferingPercent);
-    jsonObject.put("audioSessionId",audioSessionId);
-    jsonObject.put("currentPosition",currentPosition);
-    jsonObject.put("playList",playList);
+    jsonObject.put("playState", playState);
+    jsonObject.put("playProgress", playProgress);
+    jsonObject.put("bufferingPercent", bufferingPercent);
+    jsonObject.put("audioSessionId", audioSessionId);
+    jsonObject.put("currentPosition", currentPosition);
+    jsonObject.put("playList", playList);
     return JSON.toJSONString(jsonObject);
   }
 

@@ -29,8 +29,7 @@ public class MetadataExtractorService {
       // Convert duration to long
       Long durationLong = Long.parseLong(duration);
 
-      SongEntity songEntity = new SongEntity();
-      songEntity.setType(SongEntity.LOCAL);
+      SongEntity songEntity = new SongEntity(SongEntity.LOCAL);
       songEntity.setTitle(title);
       songEntity.setArtist(artist);
       songEntity.setDuration(durationLong);

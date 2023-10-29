@@ -24,6 +24,7 @@
       </intent-filter>
     </activity>
     <activity android:name=".activity.PlayingActivity" />
+    <activity android:name=".activity.CurrentPlayListActivity" />
 
     <!-- 静态接收广播接收者 -->
   </application>

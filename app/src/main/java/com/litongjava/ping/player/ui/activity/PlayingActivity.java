@@ -8,8 +8,6 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
-import android.media.Image;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.format.DateUtils;
 import android.view.View;
@@ -20,7 +18,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
 
@@ -28,13 +25,13 @@ import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
 import com.litongjava.android.view.inject.annotation.FindViewById;
 import com.litongjava.android.view.inject.annotation.FindViewByIdLayout;
+import com.litongjava.android.view.inject.annotation.OnClick;
 import com.litongjava.android.view.inject.utils.ViewInjectUtils;
 import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.ping.player.lrc.LrcCache;
 import com.litongjava.ping.player.model.CommonResult;
 import com.litongjava.ping.player.player.AudioPlayer;
 import com.litongjava.ping.player.player.PlayMode;
-import com.litongjava.ping.player.player.PlayState;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
 import com.litongjava.ping.player.ui.R;
@@ -43,7 +40,6 @@ import com.litongjava.ping.player.utils.ImageLoadCallback;
 import com.litongjava.ping.player.utils.ImageUtils;
 import com.litongjava.ping.player.utils.TimeUtils;
 import com.mylhyl.acp.AcpListener;
-import com.xiaoleilu.hutool.log.LogFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +54,7 @@ import static com.litongjava.ping.player.player.PlayMode.Loop;
 import static com.litongjava.ping.player.player.PlayMode.Shuffle;
 import static com.litongjava.ping.player.player.PlayMode.Single;
 
-@FindViewByIdLayout(R.layout.activity_playing)
+@FindViewByIdLayout(R.layout.activity_player)
 public class PlayingActivity extends AppCompatActivity {
   private static final String TAG = "PlayingActivity";
   private static final String VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION";
@@ -84,8 +80,8 @@ public class PlayingActivity extends AppCompatActivity {
   @FindViewById(R.id.iv_next)
   private ImageView ivNext;
 
-  @FindViewById(R.id.tv_title)
-  private TextView tvTitle;
+  @FindViewById(R.id.tv_name)
+  private TextView tvName;
   @FindViewById(R.id.tv_artist)
   private TextView tvArtist;
 
@@ -339,7 +335,7 @@ public class PlayingActivity extends AppCompatActivity {
         albumCoverView.pause();
       }
     });
-    audioPlayer.getPlayProgress().observe(this,(progress)->{
+    audioPlayer.getPlayProgress().observe(this, (progress) -> {
       Logger log = LoggerFactory.getLogger(this.getClass());
 //      log.info("isDraggingProgress:{},progress:{}",isDraggingProgress,progress);
       if (!isDraggingProgress) {
@@ -349,7 +345,7 @@ public class PlayingActivity extends AppCompatActivity {
         lrcView.updateTime(progress);
       }
     });
-    audioPlayer.getBufferingPercent().observe(this,(percent)->{
+    audioPlayer.getBufferingPercent().observe(this, (percent) -> {
       sbProgress.setSecondaryProgress(sbProgress.getMax() * percent / 100);
     });
 
@@ -360,7 +356,7 @@ public class PlayingActivity extends AppCompatActivity {
       public void onChanged(SongEntity song) {
         log.info("getCurrentSong changed:{}", song);
         if (song != null) {
-          tvTitle.setText(song.getTitle());
+          tvName.setText(song.getFileName());
           tvArtist.setText(song.getArtist());
           sbProgress.setProgress(audioPlayer.getPlayProgress().getValue());
           sbProgress.setSecondaryProgress(0);
@@ -462,6 +458,12 @@ public class PlayingActivity extends AppCompatActivity {
       sbVolume.setProgress(mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC));
     }
   };
+
+  @OnClick(R.id.iv_palyList)
+  public void ivPalyList_OnClick(View view) {
+    Intent intent = new Intent(this, CurrentPlayListActivity.class);
+    this.startActivity(intent);
+  }
 
 
   @Override
