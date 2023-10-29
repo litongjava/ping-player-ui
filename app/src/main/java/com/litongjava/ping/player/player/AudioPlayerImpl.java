@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -136,6 +137,18 @@ public class AudioPlayerImpl implements AudioPlayer {
       ioExecutor.shutdown();
     }
   }
+
+  private void clearDb() {
+    ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
+    try {
+      ioExecutor.submit(() -> {
+        db.playlistDao().clear();
+      });
+    } finally {
+      ioExecutor.shutdown();
+    }
+  }
+
 
 
   @MainThread
@@ -441,6 +454,13 @@ public class AudioPlayerImpl implements AudioPlayer {
   @Override
   public int getAudioSessionId() {
     return mediaPlayer.getAudioSessionId();
+  }
+
+  @Override
+  public void clearPlayList() {
+    _playlist.setValue(new ArrayList<>());
+    this.clearDb();
+
   }
 
 

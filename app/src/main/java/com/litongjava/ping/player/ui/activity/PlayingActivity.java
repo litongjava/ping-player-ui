@@ -20,7 +20,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 
-
 import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
 import com.litongjava.android.view.inject.annotation.FindViewById;
@@ -49,10 +48,6 @@ import java.util.List;
 
 import jp.wasabeef.blurry.Blurry;
 import me.wcy.lrcview.LrcView;
-
-import static com.litongjava.ping.player.player.PlayMode.Loop;
-import static com.litongjava.ping.player.player.PlayMode.Shuffle;
-import static com.litongjava.ping.player.player.PlayMode.Single;
 
 @FindViewByIdLayout(R.layout.activity_player)
 public class PlayingActivity extends AppCompatActivity {
@@ -295,14 +290,14 @@ public class PlayingActivity extends AppCompatActivity {
 
   private void switchPlayMode() {
     PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
-    if (Loop.equals(mode)) {
-      mode = Shuffle;
+    if (PlayMode.Loop.equals(mode)) {
+      mode = PlayMode.Shuffle;
       Toast.makeText(this, R.string.play_mode_shuffle, Toast.LENGTH_SHORT).show();
-    } else if (Shuffle.equals(mode)) {
-      mode = Single;
+    } else if (PlayMode.Shuffle.equals(mode)) {
+      mode = PlayMode.Single;
       Toast.makeText(this, R.string.play_mode_single, Toast.LENGTH_SHORT).show();
-    } else if (Single.equals(mode)) {
-      mode = Loop;
+    } else if (PlayMode.Single.equals(mode)) {
+      mode = PlayMode.Loop;
       Toast.makeText(this, R.string.play_mode_loop, Toast.LENGTH_SHORT).show();
     }
     ConfigPreferences.setPlayMode(mode.getValue());
@@ -311,14 +306,14 @@ public class PlayingActivity extends AppCompatActivity {
 
   private void updatePlayMode() {
     PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
-    if (Loop.equals(mode)) {
-      mode = Shuffle;
+    if (PlayMode.Loop.equals(mode)) {
+      mode = PlayMode.Shuffle;
       toast(R.string.play_mode_shuffle);
-    } else if (Shuffle.equals(mode)) {
-      mode = Single;
+    } else if (PlayMode.Shuffle.equals(mode)) {
+      mode = PlayMode.Single;
       toast(R.string.play_mode_single);
-    } else if (Single.equals(mode)) {
-      mode = Loop;
+    } else if (PlayMode.Single.equals(mode)) {
+      mode = PlayMode.Loop;
       toast(R.string.play_mode_loop);
     }
     ConfigPreferences.setPlayMode(mode.getValue());

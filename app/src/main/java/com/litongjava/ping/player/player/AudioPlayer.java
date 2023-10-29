@@ -60,4 +60,7 @@ public interface AudioPlayer {
 
   @MainThread
   int getAudioSessionId();
+
+  void clearPlayList();
+
 }

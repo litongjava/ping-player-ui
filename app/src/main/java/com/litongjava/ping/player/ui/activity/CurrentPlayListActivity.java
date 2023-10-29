@@ -25,6 +25,8 @@ import java.util.List;
 @FindViewByIdLayout(R.layout.activity_current_play_list)
 public class CurrentPlayListActivity extends AppCompatActivity {
 
+  private AudioPlayer audioPlayer = Aop.get(AudioPlayer.class);
+
   @FindViewById(R.id.currentPlayListRecyclerView)
   private RecyclerView currentPlayListRecyclerView;
   private SongSongRecyclerViewAdapter adapter;
@@ -43,28 +45,21 @@ public class CurrentPlayListActivity extends AppCompatActivity {
     View rootView = findViewById(android.R.id.content);
 
     // 为根视图设置点击监听器
-    rootView.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        // 处理点击事件
-        onBackPressed();
-      }
+    rootView.setOnClickListener(v -> {
+      onBackPressed();
     });
 
 
-    adapter = new SongSongRecyclerViewAdapter(this, Aop.get(AudioPlayer.class).getPlaylist().getValue());
+
+    adapter = new SongSongRecyclerViewAdapter(this, audioPlayer.getPlaylist().getValue());
     currentPlayListRecyclerView.setAdapter(adapter);
   }
 
 
-  @OnClick(R.id.tvPlayMode)
-  public void tvPlayModeOnClick(View v) {
-    ToastUtils.showLong("切换模式");
-  }
-
   @OnClick(R.id.btnClear)
   public void btnClearOnClick(View v) {
     ToastUtils.showLong("清空");
+    audioPlayer.clearPlayList();
   }
 
   private void initData() {
