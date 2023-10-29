@@ -44,11 +44,13 @@ public class AudioPlayerImpl implements AudioPlayer {
   private MutableLiveData<PlayState> _playState = new MutableLiveData<>(PlayState.IDLE);
   private MutableLiveData<Integer> _playProgress = new MutableLiveData<>(0);
   private MutableLiveData<Integer> _bufferingPercent = new MutableLiveData<>(0);
+  private MutableLiveData<Integer> playTimes = new MutableLiveData<>(0);
+  private MutableLiveData<Integer> currentPlayTimes = new MutableLiveData<>(0);
 
 
   private MusicDatabase db;
 
-  private MediaPlayer mediaPlayer = Aop.get(MediaPlayer.class);
+  private MediaPlayer mediaPlayer;
   private MediaSessionManager mediaSessionManager;
   private AudioFocusManager audioFocusManager;
   private NoisyAudioStreamReceiver noisyReceiver = Aop.get(NoisyAudioStreamReceiver.class);
@@ -60,8 +62,19 @@ public class AudioPlayerImpl implements AudioPlayer {
 
   public AudioPlayerImpl(MusicDatabase db) {
     this.db = db;
+    initMediaPlayer();
     initMediaSessionManager();
     initAudioFocusManager();
+  }
+
+  private void initMediaPlayer() {
+    mediaPlayer = new MediaPlayer();
+
+    mediaPlayer.setOnCompletionListener(mp -> {
+      // 这里写你的逻辑来播放下一首歌曲
+      next();
+    });
+    AopManager.me().addSingletonObject(mediaPlayer);
   }
 
   private void initMediaSessionManager() {
@@ -97,6 +110,22 @@ public class AudioPlayerImpl implements AudioPlayer {
   @Override
   public LiveData<Integer> getBufferingPercent() {
     return _bufferingPercent;
+  }
+
+  @Override
+  public LiveData<Integer> getPlayTimes() {
+    return playTimes;
+  }
+
+  @Override
+  public LiveData<Integer> getCurrentPlayTimes() {
+    return currentPlayTimes;
+  }
+
+  @Override
+  public void setPlayTimes(Integer times) {
+    playTimes.setValue(times);
+    currentPlayTimes.setValue(0);
   }
 
   @MainThread
@@ -403,20 +432,34 @@ public class AudioPlayerImpl implements AudioPlayer {
     if (playlist == null || playlist.isEmpty()) {
       return;
     }
+    Integer playTimes = this.playTimes.getValue();
+    if (playTimes != null && playTimes != 0) {
+      Integer value = currentPlayTimes.getValue();
+      if (value != null) {
+        currentPlayTimes.setValue(++value);
+        if (value % playTimes == 0) {
+          playPause();
+          return;
+        }
+      }
+
+    }
 
     PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
-
+    SongEntity song = null;
     if (mode == PlayMode.Shuffle) {
-      play(playlist.get(new Random().nextInt(playlist.size())));
+      song = playlist.get(new Random().nextInt(playlist.size()));
+
     } else if (mode == PlayMode.Single) {
-      play(_currentSong.getValue());
+      song = _currentSong.getValue();
     } else if (mode == PlayMode.Loop) {
       int position = playlist.indexOf(_currentSong.getValue()) + 1;
       if (position >= playlist.size()) {
         position = 0;
       }
-      play(playlist.get(position));
+      song = playlist.get(position);
     }
+    play(song);
   }
 
 

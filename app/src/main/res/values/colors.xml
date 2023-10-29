@@ -16,7 +16,7 @@
   <color name="red_500">#F44336</color>
   <color name="red_500_p30">#4CF44336</color>
   <color name="translucent_white_p10">#19FFFFFF</color>
-  <color name="common_text_h1_color">#202020</color>
+  <color name="common_text_h1_color">#8BC34A</color>
   <color name="common_text_h2_color">@color/grey</color>
   <color name="common_divider">@color/grey_100</color>
   <color name="common_theme_color">@color/red_500</color>

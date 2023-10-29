@@ -12,7 +12,6 @@
     android:layout_gravity="bottom"
     android:clickable="true"
     android:orientation="vertical"
-    app:shape_solidColor="@color/card_bg"
     app:shape_topLeftRadius="16dp"
     app:shape_topRightRadius="16dp">
 

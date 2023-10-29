@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 
 import java.util.List;
+
 public interface AudioPlayer {
 
   LiveData<List<SongEntity>> getPlaylist();
@@ -18,6 +19,12 @@ public interface AudioPlayer {
   LiveData<Integer> getPlayProgress();
 
   LiveData<Integer> getBufferingPercent();
+
+  LiveData<Integer> getPlayTimes();
+
+  LiveData<Integer> getCurrentPlayTimes();
+
+  public void setPlayTimes(Integer i);
 
   @MainThread
   void addAndPlay(SongEntity... songs);

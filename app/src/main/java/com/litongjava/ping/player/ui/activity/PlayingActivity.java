@@ -3,6 +3,7 @@ package com.litongjava.ping.player.ui.activity;
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
@@ -17,8 +18,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
 
 import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
@@ -87,6 +88,11 @@ public class PlayingActivity extends AppCompatActivity {
   @FindViewById(R.id.sb_progress)
   private SeekBar sbProgress;
 
+  @FindViewById(R.id.playTimeTv)
+  private TextView playTimeTv;
+  @FindViewById(R.id.currentPlayTimeTv)
+  private TextView currentPlayTimeTv;
+
 
   private AudioManager mAudioManager;
   private AudioPlayer audioPlayer = Aop.get(AudioPlayer.class);
@@ -108,7 +114,7 @@ public class PlayingActivity extends AppCompatActivity {
     initCover();
     initLrc();
     switchCoverLrc(true);
-    initPlayControl();
+    initView();
     updatePlayMode();
     initData();
 
@@ -226,7 +232,7 @@ public class PlayingActivity extends AppCompatActivity {
   /**
    * 此方法主要负责初始化播放控制按钮（如播放、暂停、上一曲、下一曲、切换播放模式）的点击监听器。同时，它还设置了进度条和音量控制滑块的监听器。
    */
-  private void initPlayControl() {
+  private void initView() {
     ivMode.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -285,6 +291,8 @@ public class PlayingActivity extends AppCompatActivity {
       }
 
     });
+    playTimeTv.setText(audioPlayer.getPlayTimes().getValue() + "");
+    currentPlayTimeTv.setText(audioPlayer.getCurrentPlayTimes().getValue() + "");
 
   }
 
@@ -321,6 +329,7 @@ public class PlayingActivity extends AppCompatActivity {
   }
 
   private void initData() {
+    Logger log = LoggerFactory.getLogger(this.getClass());
     audioPlayer.getPlayState().observe(this, (playState) -> {
       if (playState.isPlaying() || playState.isPreparing()) {
         ivPlay.setSelected(true);
@@ -331,7 +340,6 @@ public class PlayingActivity extends AppCompatActivity {
       }
     });
     audioPlayer.getPlayProgress().observe(this, (progress) -> {
-      Logger log = LoggerFactory.getLogger(this.getClass());
 //      log.info("isDraggingProgress:{},progress:{}",isDraggingProgress,progress);
       if (!isDraggingProgress) {
         sbProgress.setProgress(progress);
@@ -344,34 +352,35 @@ public class PlayingActivity extends AppCompatActivity {
       sbProgress.setSecondaryProgress(sbProgress.getMax() * percent / 100);
     });
 
-    audioPlayer.getCurrentSong().observe(this, new Observer<SongEntity>() {
-      Logger log = LoggerFactory.getLogger(this.getClass());
-
-      @Override
-      public void onChanged(SongEntity song) {
-        log.info("getCurrentSong changed:{}", song);
-        if (song != null) {
-          tvName.setText(song.getFileName());
-          tvArtist.setText(song.getArtist());
-          sbProgress.setProgress(audioPlayer.getPlayProgress().getValue());
-          sbProgress.setSecondaryProgress(0);
-          sbProgress.setMax(song.getDuration().intValue());
-          mLastProgress = 0;
-          tvCurrentTime.setText(R.string.play_time_start);
-          tvTotalTime.setText(TimeUtils.formatTime("mm:ss", song.getDuration()));
-          updateCover(song);
-          updateLrc(song);
-          if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPreparing()) {
-            ivPlay.setSelected(true);
-            albumCoverView.start();
-          } else {
-            ivPlay.setSelected(false);
-            albumCoverView.pause();
-          }
+    audioPlayer.getCurrentSong().observe(this, song -> {
+      log.info("getCurrentSong changed:{}", song);
+      if (song != null) {
+        tvName.setText(song.getFileName());
+        tvArtist.setText(song.getArtist());
+        sbProgress.setProgress(audioPlayer.getPlayProgress().getValue());
+        sbProgress.setSecondaryProgress(0);
+        sbProgress.setMax(song.getDuration().intValue());
+        mLastProgress = 0;
+        tvCurrentTime.setText(R.string.play_time_start);
+        tvTotalTime.setText(TimeUtils.formatTime("mm:ss", song.getDuration()));
+        updateCover(song);
+        updateLrc(song);
+        if (audioPlayer.getPlayState().getValue().isPlaying() || audioPlayer.getPlayState().getValue().isPreparing()) {
+          ivPlay.setSelected(true);
+          albumCoverView.start();
         } else {
-          finish();
+          ivPlay.setSelected(false);
+          albumCoverView.pause();
         }
+      } else {
+        finish();
       }
+    });
+    audioPlayer.getPlayTimes().observe(this, (times) -> {
+      playTimeTv.setText(times + "");
+    });
+    audioPlayer.getCurrentPlayTimes().observe(this, (times) -> {
+      currentPlayTimeTv.setText(times + "");
     });
   }
 
@@ -458,6 +467,28 @@ public class PlayingActivity extends AppCompatActivity {
   public void ivPalyList_OnClick(View view) {
     Intent intent = new Intent(this, CurrentPlayListActivity.class);
     this.startActivity(intent);
+  }
+
+  @OnClick(R.id.iv_timer)
+  public void timerBtn_onClick(View v) {
+    showDialog();
+  }
+
+
+  private void showDialog() {
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    CharSequence[] items = {"0", "1", "2", "3", "4", "5", "6", "7", "8"};
+    builder.setTitle("Select a item")
+      .setItems(items, new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialogInterface, int selectedIndex) {
+          Aop.get(AudioPlayer.class).setPlayTimes(selectedIndex);
+        }
+      });
+
+    // 创建并显示对话框
+    AlertDialog dialog = builder.create();
+    dialog.show();
   }
 
 

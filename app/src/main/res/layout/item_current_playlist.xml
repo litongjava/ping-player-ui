@@ -15,11 +15,15 @@
     android:layout_weight="1"
     android:orientation="horizontal">
 
-    <TextView
+    <com.hjq.shape.view.ShapeTextView
       android:id="@+id/itemIndex"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="0:" />
+      android:ellipsize="end"
+      android:singleLine="true"
+      android:textSize="15dp"
+      app:shape_textSelectedColor="@color/common_theme_color"
+      tools:text="0:" />
 
     <com.hjq.shape.view.ShapeTextView
       android:id="@+id/itemVvTitle"
@@ -28,7 +32,6 @@
       android:ellipsize="end"
       android:singleLine="true"
       android:textSize="15dp"
-      app:shape_textColor="@color/common_text_h1_color"
       app:shape_textSelectedColor="@color/common_theme_color"
       tools:text="听不到" />
 

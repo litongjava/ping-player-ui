@@ -23,7 +23,7 @@ public class RecyclerViewViewHolder extends RecyclerView.ViewHolder {
   private ShapeTextView vvTitle;
   private ShapeTextView vvArtist;
   private ImageView ivDelete;
-  TextView itemIndex;
+  private ShapeTextView itemIndex;
 
   public RecyclerViewViewHolder(@NonNull View itemView) {
     super(itemView);
@@ -38,8 +38,9 @@ public class RecyclerViewViewHolder extends RecyclerView.ViewHolder {
     itemIndex.setText(i + 1 + ":");
     String fileName = e.getFileName();
     if (e.getSongId() == currentId) {
-      vvTitle.setTextColor(Color.RED);
-      vvArtist.setTextColor(Color.RED);
+      vvTitle.setSelected(true);
+      vvArtist.setSelected(true);
+      itemIndex.setSelected(true);
     }
     vvTitle.setText(fileName);
     vvArtist.setText(e.getArtist());
