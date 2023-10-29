@@ -63,4 +63,5 @@ public interface AudioPlayer {
 
   void clearPlayList();
 
+  void delete(Long songId);
 }

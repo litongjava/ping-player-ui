@@ -150,7 +150,6 @@ public class AudioPlayerImpl implements AudioPlayer {
   }
 
 
-
   @MainThread
   @Override
   public void replaceAll(List<SongEntity> songList, SongEntity song) {
@@ -244,35 +243,64 @@ public class AudioPlayerImpl implements AudioPlayer {
     Executors.newSingleThreadExecutor().submit(() -> {
       List<SongEntity> playlist = new ArrayList<>(_playlist.getValue());
       int index = playlist.indexOf(song);
-      if (index < 0) return;
-      playlist.remove(index);
-      _playlist.postValue(playlist);
-
-      // Execute database operations on an IO thread
-      try {
-        Executors.newSingleThreadExecutor().submit(() -> {
-          db.playlistDao().delete(song);
-          return null;
-        }).get(); // Wait for the IO operations to complete
-      } catch (ExecutionException e) {
-        e.printStackTrace();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-
-      if (song.equals(_currentSong.getValue())) {
-        int newIndex = Math.max(index - 1, 0);
-        _currentSong.postValue(playlist.size() > newIndex ? playlist.get(newIndex) : null);
-
-        PlayState currentState = _playState.getValue();
-        if ((currentState == PlayState.PLAYING || currentState == PlayState.PREPARING)
-          && !playlist.isEmpty()) {
-          next();
-        } else {
-          stopPlayer();
-        }
+      if (index > 0) {
+        SongEntity removed = playlist.remove(index);
+        _playlist.postValue(playlist);
+        // Execute database operations on an IO thread
+        updateDb(removed);
+        updatePlay(removed, playlist, index);
       }
     });
+  }
+
+  @Override
+  public void delete(Long songId) {
+    Executors.newSingleThreadExecutor().submit(() -> {
+      List<SongEntity> playlist = new ArrayList<>(_playlist.getValue());
+      int index = 0;
+      for (int i = 0; i < playlist.size(); i++) {
+        if (playlist.get(i).getSongId() == songId) {
+          index = i;
+        }
+      }
+
+      if (index > 0) {
+        SongEntity removed = playlist.remove(index);
+        _playlist.postValue(playlist);
+        // Execute database operations on an IO thread
+        updateDb(removed);
+        updatePlay(removed, playlist, index);
+      }
+
+    });
+  }
+
+  private void updatePlay(SongEntity song, List<SongEntity> playlist, int index) {
+    if (song.equals(_currentSong.getValue())) {
+      int newIndex = Math.max(index - 1, 0);
+      _currentSong.postValue(playlist.size() > newIndex ? playlist.get(newIndex) : null);
+
+      PlayState currentState = _playState.getValue();
+      if ((currentState == PlayState.PLAYING || currentState == PlayState.PREPARING)
+        && !playlist.isEmpty()) {
+        next();
+      } else {
+        stopPlayer();
+      }
+    }
+  }
+
+  private void updateDb(SongEntity song) {
+    try {
+      Executors.newSingleThreadExecutor().submit(() -> {
+        db.playlistDao().delete(song);
+        return null;
+      }).get(); // Wait for the IO operations to complete
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
   @MainThread
@@ -462,7 +490,6 @@ public class AudioPlayerImpl implements AudioPlayer {
     this.clearDb();
 
   }
-
 
   @MainThread
   @Override

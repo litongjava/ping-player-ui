@@ -1,5 +1,6 @@
 package com.litongjava.ping.player.adapter;
 
+import android.graphics.Color;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,28 +18,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class SongRecyclerViewViewHolder extends RecyclerView.ViewHolder {
+public class RecyclerViewViewHolder extends RecyclerView.ViewHolder {
   private Logger log = LoggerFactory.getLogger(this.getClass());
   private ShapeTextView vvTitle;
   private ShapeTextView vvArtist;
   private ImageView ivDelete;
+  TextView itemIndex;
 
-  public SongRecyclerViewViewHolder(@NonNull View itemView) {
+  public RecyclerViewViewHolder(@NonNull View itemView) {
     super(itemView);
+    itemIndex = itemView.findViewById(R.id.itemIndex);
     vvTitle = itemView.findViewById(R.id.itemVvTitle);
-    log.info("vvTitle:{}", vvTitle);
-    vvArtist = itemView.findViewById(R.id.itemVvTitle);
+    vvArtist = itemView.findViewById(R.id.itemTvArtist);
     ivDelete = itemView.findViewById(R.id.itemIvDelete);
+
   }
 
-  public void onBind(SongEntity e) {
-
+  public void onBind(int i, SongEntity e, Long currentId) {
+    itemIndex.setText(i + 1 + ":");
     String fileName = e.getFileName();
-    log.info("filename:{}", fileName);
-    vvTitle.setText("filename");
-    vvArtist.setText("artist");
+    if (e.getSongId() == currentId) {
+      vvTitle.setTextColor(Color.RED);
+      vvArtist.setTextColor(Color.RED);
+    }
+    vvTitle.setText(fileName);
+    vvArtist.setText(e.getArtist());
+
     ivDelete.setOnClickListener((View v) -> {
-      Aop.get(AudioPlayer.class).delete(e);
+      Aop.get(AudioPlayer.class).delete(e.getSongId());
+    });
+
+    super.itemView.setOnClickListener((View) -> {
+      Aop.get(AudioPlayer.class).play(e);
     });
   }
 }
