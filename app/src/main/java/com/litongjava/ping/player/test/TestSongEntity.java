@@ -40,6 +40,7 @@ public class TestSongEntity {
         song.setUniqueId(id + "");
         song.setAlbumId(id);
         song.setArtistId(id);
+        song.setCollectionId("OpenLanguage");
         list.add(song);
       }
 

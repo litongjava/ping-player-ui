@@ -16,12 +16,11 @@ import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.jfinal.aop.AopManager;
 import com.litongjava.ping.player.bean.DoubleData;
 import com.litongjava.ping.player.revicer.NoisyAudioStreamReceiver;
-import com.litongjava.ping.player.services.PingPlayerConfigService;
+import com.litongjava.ping.player.services.PingPlayerCurrentPlayIndexManager;
 import com.litongjava.ping.player.services.PlayListService;
 import com.litongjava.ping.player.storage.db.MusicDatabase;
-import com.litongjava.ping.player.storage.db.dao.PingPlayerConfigDao;
-import com.litongjava.ping.player.storage.db.entity.PingPlayerConfigEntity;
-import com.litongjava.ping.player.storage.db.entity.PingPlayerConfigKey;
+import com.litongjava.ping.player.storage.db.dao.PingPlayerCurrentPlayIndexDao;
+import com.litongjava.ping.player.storage.db.entity.PingPlayerCurrentPlayIndexEntity;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
 
@@ -76,33 +75,34 @@ public class AudioPlayerImpl implements AudioPlayer {
    * 初始化播放历史
    */
   private void initPlayList() {
-    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<DoubleData<List<SongEntity>, String>>() {
+    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<DoubleData<List<SongEntity>, Integer>>() {
       @Override
-      public DoubleData<List<SongEntity>, String> doInBackground() {
+      public DoubleData<List<SongEntity>, Integer> doInBackground() {
         List<SongEntity> songEntities = db.playlistDao().queryAll();
-        String value = null;
-        PingPlayerConfigDao pingPlayerConfigDao = db.configDao();
-        PingPlayerConfigEntity pingPlayerConfigEntity = pingPlayerConfigDao.selectByKey(PingPlayerConfigKey.playIndex);
-        if (pingPlayerConfigEntity != null) {
-          value = pingPlayerConfigEntity.getValue();
-        } else {
-          if (songEntities != null && songEntities.size() > 0) {
-            value = "0";
+        Integer index = null;
+        if (songEntities != null && songEntities.size() > 0) {
+          PingPlayerCurrentPlayIndexDao currentPlayIndexDao = db.currentPlayIndexDao();
+          String collectionId = songEntities.get(0).getCollectionId();
+          PingPlayerCurrentPlayIndexEntity entity = currentPlayIndexDao.selectByCollectionId(collectionId);
+          if (entity != null) {
+            index = entity.getIndex();
+          } else {
+            index = 0;
           }
         }
-        DoubleData<List<SongEntity>, String> data = new DoubleData<>(songEntities, value);
+        DoubleData<List<SongEntity>, Integer> data = new DoubleData<>(songEntities, index);
         return data;
       }
 
       @Override
-      public void onSuccess(DoubleData<List<SongEntity>, String> result) {
+      public void onSuccess(DoubleData<List<SongEntity>, Integer> result) {
         List<SongEntity> t1 = result.getT1();
-        String t2 = result.getT2();
+        Integer t2 = result.getT2();
         _playlist.setValue(t1);
 
 
         if (t2 != null) {
-          _currentSong.setValue(t1.get(Integer.parseInt(t2)));
+          _currentSong.setValue(t1.get(t2));
         }
 
       }
@@ -269,7 +269,7 @@ public class AudioPlayerImpl implements AudioPlayer {
     _playProgress.setValue(0);
     _bufferingPercent.setValue(0);
     _playState.setValue(PlayState.PREPARING);
-    Aop.get(PingPlayerConfigService.class).updateCurrentPlayIndexInDb(currentIndex);
+    Aop.get(PingPlayerCurrentPlayIndexManager.class).updateCurrentPlayIndexByIo(playSong.getCollectionId(), currentIndex);
     PlayService.showNotification(Utils.getApp(), true, playSong);
 
     if (mediaSessionManager == null) {
@@ -568,7 +568,6 @@ public class AudioPlayerImpl implements AudioPlayer {
   public void clearPlayList() {
     _playlist.setValue(new ArrayList<>());
     this.clearDb();
-
   }
 
   @MainThread
