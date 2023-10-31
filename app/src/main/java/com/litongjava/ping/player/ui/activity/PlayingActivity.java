@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
@@ -20,7 +21,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import com.blankj.utilcode.util.PermissionUtils;
 import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
 import com.litongjava.android.view.inject.annotation.FindViewById;
@@ -108,7 +111,7 @@ public class PlayingActivity extends AppCompatActivity {
     ViewInjectUtils.injectActivity(this, this);
     // 在onCreate或其他合适的初始化方法中
     mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-    initPermisson();
+    initPermission();
     initTitle();
     initVolume();
     initCover();
@@ -120,25 +123,39 @@ public class PlayingActivity extends AppCompatActivity {
 
   }
 
-  private void initPermisson() {
+  // 检查权限是否已经被授权
+  private boolean hasPermissions(Context context, String... permissions) {
+    if (context != null && permissions != null) {
+      for (String permission : permissions) {
+        if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private void initPermission() {
     String[] permissions = {
       //写入外部设备权限
       Manifest.permission.WRITE_EXTERNAL_STORAGE,
       Manifest.permission.READ_EXTERNAL_STORAGE
     };
-    //创建acpListener
-    AcpListener acpListener = new AcpListener() {
-      @Override
-      public void onGranted() {
-        //ToastUtils.defaultToast(getApplicationContext(), "获取权限成功");
-      }
+    if (!hasPermissions(this, permissions)) {
+      AcpListener acpListener = new AcpListener() {
+        @Override
+        public void onGranted() {
+          //ToastUtils.defaultToast(getApplicationContext(), "获取权限成功");
+        }
 
-      @Override
-      public void onDenied(List<String> permissions) {
-        ToastUtils.defaultToast(getApplicationContext(), permissions.toString() + "权限拒绝");
-      }
-    };
-    AcpUtils.requestPermissions(this, permissions, acpListener);
+        @Override
+        public void onDenied(List<String> permissions) {
+          ToastUtils.defaultToast(getApplicationContext(), permissions.toString() + "权限拒绝");
+        }
+      };
+
+      AcpUtils.requestPermissions(this, permissions, acpListener);
+    }
   }
 
   private void initTitle() {
@@ -300,13 +317,13 @@ public class PlayingActivity extends AppCompatActivity {
     PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
     if (PlayMode.Loop.equals(mode)) {
       mode = PlayMode.Shuffle;
-      Toast.makeText(this, R.string.play_mode_shuffle, Toast.LENGTH_SHORT).show();
+      //Toast.makeText(this, R.string.play_mode_shuffle, Toast.LENGTH_SHORT).show();
     } else if (PlayMode.Shuffle.equals(mode)) {
       mode = PlayMode.Single;
-      Toast.makeText(this, R.string.play_mode_single, Toast.LENGTH_SHORT).show();
+      // Toast.makeText(this, R.string.play_mode_single, Toast.LENGTH_SHORT).show();
     } else if (PlayMode.Single.equals(mode)) {
       mode = PlayMode.Loop;
-      Toast.makeText(this, R.string.play_mode_loop, Toast.LENGTH_SHORT).show();
+      // Toast.makeText(this, R.string.play_mode_loop, Toast.LENGTH_SHORT).show();
     }
     ConfigPreferences.setPlayMode(mode.getValue());
     updatePlayMode();

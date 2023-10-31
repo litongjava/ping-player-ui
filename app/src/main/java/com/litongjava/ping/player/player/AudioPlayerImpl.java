@@ -3,19 +3,25 @@ package com.litongjava.ping.player.player;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.AsyncTask;
 import android.os.Handler;
 
 import androidx.annotation.MainThread;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.blankj.utilcode.util.ThreadUtils;
 import com.blankj.utilcode.util.ToastUtils;
 import com.blankj.utilcode.util.Utils;
 import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.jfinal.aop.AopManager;
+import com.litongjava.ping.player.bean.DoubleData;
 import com.litongjava.ping.player.revicer.NoisyAudioStreamReceiver;
+import com.litongjava.ping.player.services.PingPlayerConfigService;
+import com.litongjava.ping.player.services.PlayListService;
 import com.litongjava.ping.player.storage.db.MusicDatabase;
+import com.litongjava.ping.player.storage.db.dao.PingPlayerConfigDao;
+import com.litongjava.ping.player.storage.db.entity.PingPlayerConfigEntity;
+import com.litongjava.ping.player.storage.db.entity.PingPlayerConfigKey;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
 
@@ -23,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 
 public class AudioPlayerImpl implements AudioPlayer {
@@ -65,6 +69,44 @@ public class AudioPlayerImpl implements AudioPlayer {
     initMediaPlayer();
     initMediaSessionManager();
     initAudioFocusManager();
+    initPlayList();
+  }
+
+  /**
+   * 初始化播放历史
+   */
+  private void initPlayList() {
+    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<DoubleData<List<SongEntity>, String>>() {
+      @Override
+      public DoubleData<List<SongEntity>, String> doInBackground() {
+        List<SongEntity> songEntities = db.playlistDao().queryAll();
+        String value = null;
+        PingPlayerConfigDao pingPlayerConfigDao = db.configDao();
+        PingPlayerConfigEntity pingPlayerConfigEntity = pingPlayerConfigDao.selectByKey(PingPlayerConfigKey.playIndex);
+        if (pingPlayerConfigEntity != null) {
+          value = pingPlayerConfigEntity.getValue();
+        } else {
+          if (songEntities != null && songEntities.size() > 0) {
+            value = "0";
+          }
+        }
+        DoubleData<List<SongEntity>, String> data = new DoubleData<>(songEntities, value);
+        return data;
+      }
+
+      @Override
+      public void onSuccess(DoubleData<List<SongEntity>, String> result) {
+        List<SongEntity> t1 = result.getT1();
+        String t2 = result.getT2();
+        _playlist.setValue(t1);
+
+
+        if (t2 != null) {
+          _currentSong.setValue(t1.get(Integer.parseInt(t2)));
+        }
+
+      }
+    });
   }
 
   private void initMediaPlayer() {
@@ -131,8 +173,22 @@ public class AudioPlayerImpl implements AudioPlayer {
   @MainThread
   @Override
   public void addAndPlay(SongEntity... songs) {
-    new AddAndPlayTask().execute(songs);
+    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<List<SongEntity>>() {
+      @Override
+      public List<SongEntity> doInBackground() {
+        List<SongEntity> entities = Arrays.asList(songs);
+        Aop.get(PlayListService.class).updateListByIo(entities);
+        return entities;
+      }
+
+      @Override
+      public void onSuccess(List<SongEntity> entities) {
+        _playlist.setValue(entities); // 在主线程上更新UI
+        play(_playlist.getValue().get(0));
+      }
+    });
   }
+
 
   /**
    * 处理__playlist为空的情况
@@ -155,17 +211,6 @@ public class AudioPlayerImpl implements AudioPlayer {
     return newPlaylist;
   }
 
-  private void updateDb(List<SongEntity> newPlaylist) {
-    ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
-    try {
-      ioExecutor.submit(() -> {
-        db.playlistDao().clear();
-        db.playlistDao().insertAll(newPlaylist);
-      });
-    } finally {
-      ioExecutor.shutdown();
-    }
-  }
 
   private void clearDb() {
     ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
@@ -206,21 +251,25 @@ public class AudioPlayerImpl implements AudioPlayer {
 
   @MainThread
   @Override
-  public void play(SongEntity song) {
-
+  public void play(SongEntity playSong) {
     List<SongEntity> playlist = _playlist.getValue();
     if (playlist == null || playlist.isEmpty()) {
       return;
     }
-    if (song != null && !playlist.contains(song)) {
+
+    int currentIndex = 0;
+    if (playSong == null) {
+      playSong = playlist.get(currentIndex);
       return;
+    } else {
+      currentIndex = playlist.indexOf(playSong);
     }
-    SongEntity playSong = song == null ? playlist.get(0) : song;
+
     _currentSong.setValue(playSong);
     _playProgress.setValue(0);
     _bufferingPercent.setValue(0);
     _playState.setValue(PlayState.PREPARING);
-
+    Aop.get(PingPlayerConfigService.class).updateCurrentPlayIndexInDb(currentIndex);
     PlayService.showNotification(Utils.getApp(), true, playSong);
 
     if (mediaSessionManager == null) {
@@ -276,12 +325,13 @@ public class AudioPlayerImpl implements AudioPlayer {
         SongEntity removed = playlist.remove(index);
         _playlist.postValue(playlist);
         // Execute database operations on an IO thread
-        updateDb(removed);
+        Aop.get(PlayListService.class).deleteByIo(song);
         updatePlay(removed, playlist, index);
       }
     });
   }
 
+  @MainThread
   @Override
   public void delete(Long songId) {
     Executors.newSingleThreadExecutor().submit(() -> {
@@ -297,7 +347,7 @@ public class AudioPlayerImpl implements AudioPlayer {
         SongEntity removed = playlist.remove(index);
         _playlist.postValue(playlist);
         // Execute database operations on an IO thread
-        updateDb(removed);
+        Aop.get(PlayListService.class).deleteByIo(removed);
         updatePlay(removed, playlist, index);
       }
 
@@ -316,19 +366,6 @@ public class AudioPlayerImpl implements AudioPlayer {
       } else {
         stopPlayer();
       }
-    }
-  }
-
-  private void updateDb(SongEntity song) {
-    try {
-      Executors.newSingleThreadExecutor().submit(() -> {
-        db.playlistDao().delete(song);
-        return null;
-      }).get(); // Wait for the IO operations to complete
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
     }
   }
 
@@ -562,22 +599,6 @@ public class AudioPlayerImpl implements AudioPlayer {
         initAudioFocusManager();
       }
       audioFocusManager.abandonAudioFocus();
-    }
-  }
-
-  private class AddAndPlayTask extends AsyncTask<SongEntity, Void, List<SongEntity>> {
-
-    @Override
-    protected List<SongEntity> doInBackground(SongEntity... songs) {
-      List<SongEntity> newPlaylist = Arrays.asList(songs);
-      updateDb(newPlaylist); // 假设 updateDb 不会更新UI
-      return newPlaylist;
-    }
-
-    @Override
-    protected void onPostExecute(List<SongEntity> newPlaylist) {
-      _playlist.setValue(newPlaylist); // 在主线程上更新UI
-      play(_playlist.getValue().get(0));
     }
   }
 }

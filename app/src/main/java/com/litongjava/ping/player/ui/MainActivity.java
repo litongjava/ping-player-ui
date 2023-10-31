@@ -12,14 +12,17 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.blankj.utilcode.util.NetworkUtils;
+import com.blankj.utilcode.util.ThreadUtils;
 import com.litongjava.android.utils.acp.AcpUtils;
 import com.litongjava.android.utils.toast.ToastUtils;
+import com.litongjava.android.view.inject.annotation.FindViewById;
 import com.litongjava.android.view.inject.annotation.FindViewByIdLayout;
 import com.litongjava.android.view.inject.annotation.OnClick;
 import com.litongjava.android.view.inject.utils.ViewInjectUtils;
 import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.jfinal.aop.AopManager;
 import com.litongjava.ping.player.player.AudioPlayer;
+import com.litongjava.ping.player.storage.db.MusicDatabase;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
 import com.litongjava.ping.player.test.TestSongEntity;
 import com.litongjava.ping.player.ui.activity.PlayingActivity;
@@ -31,6 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @FindViewByIdLayout(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity {
@@ -38,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
 
   private MediaPlayer mediaPlayer;
   private Button playButton, stopButton;
+  @FindViewById(R.id.selectDBBtn)
+  private Button selectDBBtn;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -127,11 +134,32 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @OnClick(R.id.playListBtn)
-  public void playListBtn_OnClick(View view){
+  public void playListBtn_OnClick(View view) {
     List<SongEntity> playList = TestSongEntity.getPlayList();
+    log.info("size:{}", playList.size());
     AudioPlayer audioPlayer = Aop.get(AudioPlayer.class);
     SongEntity[] songEntities = playList.toArray(new SongEntity[0]);
     audioPlayer.addAndPlay(songEntities);
+  }
+
+  @OnClick(R.id.selectDBBtn)
+  public void selectDBBtnOnClick(View v) {
+    MusicDatabase musicDatabase = Aop.get(MusicDatabase.class);
+    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<Object>() {
+
+      @Override
+      public Object doInBackground() throws Throwable {
+        List<SongEntity> songEntities = musicDatabase.playlistDao().queryAll();
+        System.out.println(songEntities.size());
+        return null;
+      }
+
+      @Override
+      public void onSuccess(Object result) {
+
+      }
+    });
+
   }
 
   @Override

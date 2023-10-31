@@ -28,6 +28,7 @@ public class TestSongEntity {
   public static List<SongEntity> getPlayList() {
     ArrayList<SongEntity> list = new ArrayList<>();
     String path = "/storage/emulated/0/Music/开言英语";
+//    String path ="/storage/self/primary/Music/开言英语";
     File mp3Folder = new File(path);
     File[] files = mp3Folder.listFiles();
     for (int i = 0; i < files.length; i++) {
@@ -44,7 +45,7 @@ public class TestSongEntity {
 
     }
 
-    //list.add(getSong(0L));
+    //upateList.add(getSong(0L));
     return list;
   }
 }
