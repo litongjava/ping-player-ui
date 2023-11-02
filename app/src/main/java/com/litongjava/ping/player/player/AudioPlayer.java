@@ -26,6 +26,9 @@ public interface AudioPlayer {
 
   public void setPlayTimes(Integer i);
 
+  LiveData<PlayMode> getPlayMode();
+  public void setPlayMode(PlayMode mode);
+
   @MainThread
   void addAndPlay(SongEntity... songs);
 

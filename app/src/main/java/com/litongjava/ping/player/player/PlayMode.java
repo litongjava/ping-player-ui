@@ -1,33 +1,34 @@
 package com.litongjava.ping.player.player;
 
-public abstract class PlayMode {
-  private int value;
+public enum PlayMode {
+  LOOP(0, "Loop Mode"),
+  SHUFFLE(1, "Shuffle Mode"),
+  SINGLE(2, "Single Mode");
 
-  private PlayMode(int value) {
+  private final int value;
+  private final String description;
+
+  PlayMode(int value, String description) {
     this.value = value;
+    this.description = description;
   }
 
   public int getValue() {
     return value;
   }
 
-  public static final PlayMode Loop = new PlayMode(0) {
-  };
-  public static final PlayMode Shuffle = new PlayMode(1) {
-  };
-  public static final PlayMode Single = new PlayMode(2) {
-  };
+  public String getDescription() {
+    return description;
+  }
 
   public static PlayMode valueOf(int value) {
     switch (value) {
-      case 0:
-        return Loop;
       case 1:
-        return Shuffle;
+        return SHUFFLE;
       case 2:
-        return Single;
+        return SINGLE;
       default:
-        return Loop;
+        return LOOP;
     }
   }
 }

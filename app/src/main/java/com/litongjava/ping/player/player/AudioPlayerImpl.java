@@ -16,13 +16,14 @@ import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.jfinal.aop.AopManager;
 import com.litongjava.ping.player.bean.DoubleData;
 import com.litongjava.ping.player.revicer.NoisyAudioStreamReceiver;
+import com.litongjava.ping.player.services.PingPlayerConfigService;
 import com.litongjava.ping.player.services.PingPlayerCurrentPlayIndexManager;
 import com.litongjava.ping.player.services.PlayListService;
 import com.litongjava.ping.player.storage.db.MusicDatabase;
 import com.litongjava.ping.player.storage.db.dao.PingPlayerCurrentPlayIndexDao;
+import com.litongjava.ping.player.storage.db.entity.PingPlayerConfigEntity;
 import com.litongjava.ping.player.storage.db.entity.PingPlayerCurrentPlayIndexEntity;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
-import com.litongjava.ping.player.storage.preferences.ConfigPreferences;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public class AudioPlayerImpl implements AudioPlayer {
   private MutableLiveData<Integer> _bufferingPercent = new MutableLiveData<>(0);
   private MutableLiveData<Integer> playTimes = new MutableLiveData<>(0);
   private MutableLiveData<Integer> currentPlayTimes = new MutableLiveData<>(0);
+  private MutableLiveData<PlayMode> playMode = new MutableLiveData(PlayMode.LOOP);
 
 
   private MusicDatabase db;
@@ -69,6 +71,26 @@ public class AudioPlayerImpl implements AudioPlayer {
     initMediaSessionManager();
     initAudioFocusManager();
     initPlayList();
+    initPlayOther();
+  }
+
+  private void initPlayOther() {
+    //playMode
+    ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<PingPlayerConfigEntity>() {
+
+      @Override
+      public PingPlayerConfigEntity doInBackground() throws Throwable {
+        return Aop.get(PingPlayerConfigService.class).getCurrentPlayMode();
+      }
+
+      @Override
+      public void onSuccess(PingPlayerConfigEntity result) {
+        if (result != null) {
+          playMode.setValue(PlayMode.valueOf(Integer.valueOf(result.getValue())));
+        }
+      }
+    });
+
   }
 
   /**
@@ -168,6 +190,17 @@ public class AudioPlayerImpl implements AudioPlayer {
   public void setPlayTimes(Integer times) {
     playTimes.setValue(times);
     currentPlayTimes.setValue(0);
+  }
+
+  @Override
+  public LiveData<PlayMode> getPlayMode() {
+    return playMode;
+  }
+
+  @Override
+  public void setPlayMode(PlayMode mode) {
+    playMode.setValue(mode);
+    Aop.get(PingPlayerConfigService.class).setPlayMode(mode.getValue());
   }
 
   @MainThread
@@ -482,14 +515,14 @@ public class AudioPlayerImpl implements AudioPlayer {
 
     }
 
-    PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
+    PlayMode mode = playMode.getValue();
     SongEntity song = null;
-    if (mode == PlayMode.Shuffle) {
+    if (mode == PlayMode.SHUFFLE) {
       song = playlist.get(new Random().nextInt(playlist.size()));
 
-    } else if (mode == PlayMode.Single) {
+    } else if (mode == PlayMode.SHUFFLE) {
       song = _currentSong.getValue();
-    } else if (mode == PlayMode.Loop) {
+    } else if (mode == PlayMode.LOOP) {
       int position = playlist.indexOf(_currentSong.getValue()) + 1;
       if (position >= playlist.size()) {
         position = 0;
@@ -508,13 +541,13 @@ public class AudioPlayerImpl implements AudioPlayer {
       return;
     }
 
-    PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
+    PlayMode mode = playMode.getValue();
 
-    if (mode == PlayMode.Shuffle) {
+    if (mode == PlayMode.SHUFFLE) {
       play(playlist.get(new Random().nextInt(playlist.size())));
-    } else if (mode == PlayMode.Single) {
+    } else if (mode == PlayMode.SINGLE) {
       play(_currentSong.getValue());
-    } else if (mode == PlayMode.Loop) {
+    } else if (mode == PlayMode.LOOP) {
       int position = playlist.indexOf(_currentSong.getValue()) - 1;
       if (position < 0) {
         position = playlist.size() - 1;

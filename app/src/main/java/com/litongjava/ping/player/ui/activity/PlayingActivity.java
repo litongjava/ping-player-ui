@@ -314,34 +314,20 @@ public class PlayingActivity extends AppCompatActivity {
   }
 
   private void switchPlayMode() {
-    PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
-    if (PlayMode.Loop.equals(mode)) {
-      mode = PlayMode.Shuffle;
-      //Toast.makeText(this, R.string.play_mode_shuffle, Toast.LENGTH_SHORT).show();
-    } else if (PlayMode.Shuffle.equals(mode)) {
-      mode = PlayMode.Single;
-      // Toast.makeText(this, R.string.play_mode_single, Toast.LENGTH_SHORT).show();
-    } else if (PlayMode.Single.equals(mode)) {
-      mode = PlayMode.Loop;
-      // Toast.makeText(this, R.string.play_mode_loop, Toast.LENGTH_SHORT).show();
+    PlayMode mode = audioPlayer.getPlayMode().getValue();
+    if (PlayMode.LOOP.equals(mode)) {
+      mode = PlayMode.SHUFFLE;
+    } else if (PlayMode.SHUFFLE.equals(mode)) {
+      mode = PlayMode.SINGLE;
+    } else if (PlayMode.SINGLE.equals(mode)) {
+      mode = PlayMode.LOOP;
     }
-    ConfigPreferences.setPlayMode(mode.getValue());
+    audioPlayer.setPlayMode(mode);
     updatePlayMode();
   }
 
   private void updatePlayMode() {
-    PlayMode mode = PlayMode.valueOf(ConfigPreferences.getPlayMode());
-    if (PlayMode.Loop.equals(mode)) {
-      mode = PlayMode.Shuffle;
-      toast(R.string.play_mode_shuffle);
-    } else if (PlayMode.Shuffle.equals(mode)) {
-      mode = PlayMode.Single;
-      toast(R.string.play_mode_single);
-    } else if (PlayMode.Single.equals(mode)) {
-      mode = PlayMode.Loop;
-      toast(R.string.play_mode_loop);
-    }
-    ConfigPreferences.setPlayMode(mode.getValue());
+    PlayMode mode = audioPlayer.getPlayMode().getValue();
     ivMode.setImageLevel(mode.getValue());
   }
 
@@ -466,10 +452,6 @@ public class PlayingActivity extends AppCompatActivity {
       defaultCoverBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg_playing_default_cover);
     }
     return defaultCoverBitmap;
-  }
-
-  private void toast(int messageId) {
-    Toast.makeText(this, messageId, Toast.LENGTH_SHORT).show();
   }
 
 

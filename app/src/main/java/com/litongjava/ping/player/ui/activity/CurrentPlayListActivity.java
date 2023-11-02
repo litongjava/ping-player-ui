@@ -2,6 +2,7 @@ package com.litongjava.ping.player.ui.activity;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,6 +32,8 @@ public class CurrentPlayListActivity extends AppCompatActivity {
 
   @FindViewById(R.id.currentPlayListRecyclerView)
   private RecyclerView currentPlayListRecyclerView;
+  @FindViewById(R.id.tvPlayMode)
+  private TextView tvPlayMode;
   private SongSongRecyclerViewAdapter adapter;
 
   @Override
@@ -45,11 +48,12 @@ public class CurrentPlayListActivity extends AppCompatActivity {
   private void initView() {
     // 获取根视图
     View rootView = findViewById(android.R.id.content);
-
     // 为根视图设置点击监听器
     rootView.setOnClickListener(v -> {
       onBackPressed();
     });
+    String description = audioPlayer.getPlayMode().getValue().getDescription();
+    tvPlayMode.setText(description);
 
 
     adapter = new SongSongRecyclerViewAdapter(this, audioPlayer.getPlaylist().getValue());
@@ -72,7 +76,7 @@ public class CurrentPlayListActivity extends AppCompatActivity {
         Logger log = LoggerFactory.getLogger(this.getClass());
         if (playlist == null) return;
         int size = playlist.size();
-        log.info("size:{}",size);
+        log.info("size:{}", size);
         adapter.updateData(playlist);
       }
     });
