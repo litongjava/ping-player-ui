@@ -1,5 +1,7 @@
 package com.litongjava.ping.player.test;
 
+import android.os.Environment;
+
 import com.litongjava.jfinal.aop.Aop;
 import com.litongjava.ping.player.services.MetadataExtractorService;
 import com.litongjava.ping.player.storage.db.entity.SongEntity;
@@ -27,9 +29,10 @@ public class TestSongEntity {
 
   public static List<SongEntity> getPlayList() {
     ArrayList<SongEntity> list = new ArrayList<>();
-    String path = "/storage/emulated/0/Music/开言英语";
+    File externalStorageDirectory = Environment.getExternalStorageDirectory();
+
 //    String path ="/storage/self/primary/Music/开言英语";
-    File mp3Folder = new File(path);
+    File mp3Folder = new File(externalStorageDirectory, "/Music/3D脑暴");
     File[] files = mp3Folder.listFiles();
     for (int i = 0; i < files.length; i++) {
       File file = files[i];

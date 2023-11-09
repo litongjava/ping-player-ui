@@ -21,8 +21,13 @@ public class PlayerApp extends Application {
     //init database
     Context context = getBaseContext();
     MusicDatabase musicDatabase = new DatabaseModule().provideAppDatabase(context);
-    AopManager.me().addMapping(MusicDatabase.class, musicDatabase.getClass());
-    AopManager.me().addSingletonObject(musicDatabase);
+    try {
+      AopManager.me().addMapping(MusicDatabase.class, musicDatabase.getClass());
+      AopManager.me().addSingletonObject(musicDatabase);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
 
     //init audio player
     AudioPlayer audioPlayer = new AudioPlayerImpl(musicDatabase);

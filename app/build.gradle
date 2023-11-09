@@ -64,7 +64,7 @@ dependencies {
     exclude group: 'com.blankj', module: 'utilcode'
   }
 
-  implementation 'com.litongjava:jfinal-aop:1.0.4'
+  implementation 'com.litongjava:jfinal-aop:1.0.6'
   implementation 'org.t-io:tio-core:2.0.1.v20171015-RELEASE'
 
 }
